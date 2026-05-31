@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GitaAI • Choose Your Dharma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  if (!localStorage.getItem("gitaToken")) {
+    window.location.replace("signin.html");
+  }
+</script>
+
+<!-- =====================================================
+     GitaAI Topics Page
+     Inspired by Bhagavad Gita
+     Premium UI aligned with Chat with Krishna
+     Author: You 😏
+===================================================== -->
+
+<style>
+
+/* =====================================================
+   RESET & BASE
+===================================================== */
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Segoe UI",system-ui,sans-serif;
+}
+
+html,body{
+  width:100%;
+  height:100%;
+}
+
+/* =====================================================
+   COLOR SYSTEM
+===================================================== */
+
+:root{
+  --gold:#facc15;
+  --gold-soft:rgba(250,204,21,.35);
+  --bg-dark:#020617;
+  --bg-panel:#0b1224;
+  --glass:rgba(15,23,42,.75);
+  --text-main:#e5e7eb;
+  --text-soft:#cbd5f5;
+  --border-gold:rgba(250,204,21,.25);
+}
+
+/* =====================================================
+   BODY BACKGROUND
+===================================================== */
+
+body{
+  background:
+    radial-gradient(circle at top,rgba(250,204,21,.15),transparent 40%),
+    linear-gradient(rgba(2,6,23,.94),rgba(2,6,23,.94)),
+    url("./mahabharata-silhouette-symbol-icon-great-hindu-mythology-96933694.webp");
+  background-size:cover;
+  background-position:center;
+  color:var(--text-main);
+  overflow-x:hidden;
+}
+
+/* =====================================================
+   TOP NAVIGATION BAR
+===================================================== */
+
+.topbar{
+  height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+  background:linear-gradient(
+    to bottom,
+    rgba(2,6,23,.98),
+    rgba(2,6,23,.92)
+  );
+  border-bottom:1px solid var(--border-gold);
+  backdrop-filter:blur(12px);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+.topbar h2{
+  color:var(--gold);
+  font-size:22px;
+  letter-spacing:.6px;
+}
+
+.topbar a{
+  color:var(--gold);
+  text-decoration:none;
+  font-size:14px;
+  opacity:.9;
+  transition:.2s;
+}
+
+.topbar a:hover{
+  opacity:1;
+  text-shadow:0 0 12px var(--gold-soft);
+}
+
+/* =====================================================
+   HERO SECTION
+===================================================== */
+
+.hero{
+  text-align:center;
+  padding:70px 20px 40px;
+  position:relative;
+}
+
+.hero h1{
+  font-size:38px;
+  color:var(--gold);
+  margin-bottom:14px;
+  text-shadow:
+    0 0 20px rgba(250,204,21,.45),
+    0 0 60px rgba(250,204,21,.2);
+}
+
+.hero p{
+  max-width:700px;
+  margin:auto;
+  font-size:16.5px;
+  line-height:1.7;
+  color:var(--text-soft);
+}
+
+/* =====================================================
+   HERO DECORATIVE LINE
+===================================================== */
+
+.hero::after{
+  content:"";
+  display:block;
+  width:120px;
+  height:2px;
+  background:linear-gradient(
+    to right,
+    transparent,
+    var(--gold),
+    transparent
+  );
+  margin:28px auto 0;
+}
+
+/* =====================================================
+   TOPICS GRID WRAPPER
+===================================================== */
+
+.section{
+  max-width:1250px;
+  margin:auto;
+  padding:40px 26px 80px;
+}
+.section,
+.hero,
+.topbar,
+footer,
+.wisdom{
+  position:relative;
+  z-index:2;
+}
+
+.shloka-layer{
+  z-index:1;
+}
+/* =====================================================
+   GRID LAYOUT
+===================================================== */
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:32px;
+}
+
+/* =====================================================
+   TOPIC CARD BASE
+===================================================== */
+
+.card{
+  position:relative;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(15,23,42,.95),
+      rgba(2,6,23,.9)
+    );
+  border-radius:26px;
+  padding:34px 28px 38px;
+  border:1px solid var(--border-gold);
+  cursor:pointer;
+  overflow:hidden;
+  backdrop-filter:blur(14px);
+  transition:
+    transform .4s ease,
+    box-shadow .4s ease,
+    border .4s ease;
+}
+
+/* =====================================================
+   CARD HOVER
+===================================================== */
+
+.card:hover{
+  transform:translateY(-14px) scale(1.02);
+  box-shadow:
+    0 40px 100px rgba(0,0,0,.65),
+    0 0 50px rgba(250,204,21,.28);
+  border-color:var(--gold);
+}
+
+/* =====================================================
+   CARD GLOW LAYER
+===================================================== */
+
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at top left,
+      rgba(250,204,21,.22),
+      transparent 45%);
+  opacity:0;
+  transition:.4s;
+}
+
+.card:hover::before{
+  opacity:1;
+}
+
+/* =====================================================
+   CARD TITLE
+===================================================== */
+
+.card h3{
+  font-size:20px;
+  color:var(--gold);
+  margin-bottom:12px;
+  letter-spacing:.3px;
+}
+
+/* =====================================================
+   CARD DESCRIPTION
+===================================================== */
+
+.card p{
+  font-size:14.8px;
+  line-height:1.6;
+  color:var(--text-main);
+  opacity:.95;
+}
+
+/* =====================================================
+   CARD ORB DECORATION
+===================================================== */
+
+.card span{
+  position:absolute;
+  right:-60px;
+  top:-60px;
+  width:160px;
+  height:160px;
+  border-radius:50%;
+  background:
+    radial-gradient(circle,
+      rgba(250,204,21,.4),
+      transparent 60%);
+  filter:blur(30px);
+}
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+footer{
+  text-align:center;
+  padding:26px;
+  font-size:13px;
+  color:#94a3b8;
+  border-top:1px solid rgba(250,204,21,.15);
+  background:rgba(2,6,23,.85);
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media(max-width:600px){
+  .hero h1{font-size:30px;}
+  .card{padding:26px;}
+}
+.shloka-layer{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  overflow:hidden;
+}
+
+.shloka{
+  position:absolute;
+  font-size:14px;
+  color:rgba(250,204,21,.12);
+  white-space:nowrap;
+  animation:floatUp linear infinite;
+  filter:blur(.2px);
+}
+
+/* Individual shloka positions & timing */
+.shloka:nth-child(1){
+  left:10%;
+  bottom:-20%;
+  animation-duration:55s;
+}
+.shloka:nth-child(2){
+  left:30%;
+  bottom:-30%;
+  animation-duration:70s;
+}
+.shloka:nth-child(3){
+  left:55%;
+  bottom:-25%;
+  animation-duration:60s;
+}
+.shloka:nth-child(4){
+  left:75%;
+  bottom:-35%;
+  animation-duration:80s;
+}
+.shloka:nth-child(5){
+  left:90%;
+  bottom:-40%;
+  animation-duration:90s;
+}
+
+/* Floating animation */
+@keyframes floatUp{
+  from{
+    transform:translateY(0);
+    opacity:0;
+  }
+  10%{opacity:.25;}
+  to{
+    transform:translateY(-160vh);
+    opacity:0;
+  }
+}
+
+/* =====================================================
+   GLOBAL AMBIENT GLOW (BACKGROUND BREATHING)
+===================================================== */
+
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 20% 20%,
+      rgba(250,204,21,.08),
+      transparent 45%),
+    radial-gradient(circle at 80% 70%,
+      rgba(250,204,21,.06),
+      transparent 50%);
+  animation:breath 12s ease-in-out infinite;
+  pointer-events:none;
+  z-index:0;
+}
+
+@keyframes breath{
+  0%{opacity:.4}
+  50%{opacity:.8}
+  100%{opacity:.4}
+}
+
+/* =====================================================
+   SECTION: WISDOM BANNER (OPTIONAL)
+===================================================== */
+
+.wisdom{
+  max-width:900px;
+  margin:80px auto 40px;
+  padding:40px;
+  text-align:center;
+  background:linear-gradient(
+    145deg,
+    rgba(15,23,42,.85),
+    rgba(2,6,23,.9)
+  );
+  border-radius:30px;
+  border:1px solid rgba(250,204,21,.25);
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+
+.wisdom h2{
+  color:var(--gold);
+  font-size:26px;
+  margin-bottom:12px;
+}
+
+.wisdom p{
+  font-size:15.5px;
+  line-height:1.7;
+  color:var(--text-soft);
+}
+
+/* =====================================================
+   SCROLL SMOOTHNESS
+===================================================== */
+
+html{
+  scroll-behavior:smooth;
+}
+
+/* =====================================================
+   CARD RIPPLE EFFECT (SUBTLE)
+===================================================== */
+
+.card:active{
+  transform:scale(.98);
+}
+
+/* =====================================================
+   FUTURE AI MAPPING (PLACEHOLDER STYLES)
+   These classes are not used yet
+   They show project extensibility (VERY GOOD FOR VIVA)
+===================================================== */
+
+.ai-mapping{
+  display:none; /* backend-driven later */
+}
+
+.ai-tag{
+  display:inline-block;
+  padding:6px 12px;
+  margin:4px;
+  font-size:12px;
+  border-radius:999px;
+  background:rgba(250,204,21,.15);
+  color:var(--gold);
+  border:1px solid rgba(250,204,21,.35);
+}
+
+/* =====================================================
+   MOBILE POLISH
+===================================================== */
+
+@media(max-width:480px){
+
+  .topbar h2{
+    font-size:18px;
+  }
+
+  .hero{
+    padding-top:50px;
+  }
+
+  .wisdom{
+    margin:50px 14px;
+    padding:28px;
+  }
+}
+/* =====================================================
+   TOP NAV (MATCHES CHAT PAGE)
+===================================================== */
+
+.topbar{
+  height:92px;
+  display:grid;
+  grid-template-columns:64px 1fr 64px;
+  align-items:center;
+  background:rgba(10,6,3,.95);
+  border-bottom:1px solid rgba(250,204,21,.35);
+  backdrop-filter:blur(12px);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+/* LEFT */
+.top-left{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.om{
+  color:#facc15;
+  font-size:22px;
+}
+
+/* CENTER */
+.top-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.top-center h2{
+  font-family:"Cinzel", serif;
+  color:#facc15;
+  font-size:20px;
+  margin:0;
+}
+
+/* SUB NAV */
+.subnav{
+  display:flex;
+  gap:18px;
+  font-size:14px;
+}
+
+.subnav a{
+  text-decoration:none;
+  color:#cbd5f5;
+  padding:4px 8px;
+  border-radius:6px;
+  transition:.25s;
+}
+
+.subnav a:hover{
+  color:#facc15;
+  background:rgba(250,204,21,.12);
+}
+
+.subnav a.active{
+  color:#facc15;
+  border-bottom:2px solid #facc15;
+}
+
+/* RIGHT */
+.top-right{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- =====================================================
+     TOP BAR
+===================================================== -->
+
+<!-- ===== TOP NAV ===== -->
+<div class="topbar">
+
+  <!-- LEFT -->
+  <div class="top-left">
+    <span class="om">ॐ</span>
+  </div>
+
+  <!-- CENTER -->
+  <div class="top-center">
+    <h2>GitaAI</h2>
+
+    <div class="subnav">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chat.html">Chat</a>
+      <a href="daily.html">Daily Wisdom</a>
+      <a href="topics.html" class="active">Topics</a>
+      <a href="journey.html">Journey</a>
+    </div>
+  </div>
+
+  <!-- RIGHT (EMPTY FOR BALANCE) -->
+  <div class="top-right"></div>
+
+</div>
+
+<!-- =====================================================
+     HERO
+===================================================== -->
+
+<div class="hero">
+  <h1>Choose Your Dharma</h1>
+  <p>
+    Every confusion, fear, and struggle has already been faced on the
+    battlefield of life. Select your concern and receive timeless
+    guidance inspired by the Bhagavad Gita.
+  </p>
+</div>
+
+<!-- =====================================================
+     TOPICS SECTION
+===================================================== -->
+
+<div class="section">
+  <div class="grid">
+
+    <div class="card" onclick="go('Stress and Anxiety')">
+      <span></span>
+      <h3>Stress & Anxiety</h3>
+      <p>
+        When the mind is restless and the heart feels burdened by
+        expectations, outcomes, and fear of failure.
+      </p>
+    </div>
+
+    <div class="card" onclick="go('Career Confusion')">
+      <span></span>
+      <h3>Career Confusion</h3>
+      <p>
+        Doubt about purpose, professional direction, and uncertainty
+        about the future path.
+      </p>
+    </div>
+
+    <div class="card" onclick="go('Fear and Self Doubt')">
+      <span></span>
+      <h3>Fear & Self-Doubt</h3>
+      <p>
+        Inner conflict, lack of confidence, and hesitation to take
+        decisive action.
+      </p>
+    </div>
+
+    <div class="card" onclick="go('Anger and Frustration')">
+      <span></span>
+      <h3>Anger</h3>
+      <p>
+        Loss of emotional balance, impulsive reactions, and inner fire
+        that clouds wisdom.
+      </p>
+    </div>
+
+    <div class="card" onclick="go('Relationships and Attachment')">
+      <span></span>
+      <h3>Relationships</h3>
+      <p>
+        Attachment, love, loss, expectation, and the pain born from
+        emotional dependence.
+      </p>
+    </div>
+
+    <div class="card" onclick="go('Purpose of Life')">
+      <span></span>
+      <h3>Purpose of Life</h3>
+      <p>
+        Seeking meaning, understanding one’s duty (Dharma), and the
+        journey toward self-realization.
+      </p>
+    </div>
+
+  </div>
+</div>
+<div class="shloka-layer">
+  <div class="shloka">कर्मण्येवाधिकारस्ते मा फलेषु कदाचन</div>
+  <div class="shloka">योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा</div>
+  <div class="shloka">न हि ज्ञानेन सदृशं पवित्रमिह विद्यते</div>
+  <div class="shloka">श्रेयान्स्वधर्मो विगुणः परधर्मात्स्वनुष्ठितात्</div>
+  <div class="shloka">उद्धरेदात्मनाऽत्मानं</div>
+</div>
+
+<!-- =====================================================
+     OPTIONAL WISDOM SECTION (CAN REMOVE IF NEEDED)
+===================================================== -->
+
+<div class="wisdom">
+  <h2>Krishna’s Reminder</h2>
+  <p>
+    You are not defined by fear, confusion, or attachment.
+    Act with clarity. Detach from outcome.
+    Balance will follow.
+  </p>
+</div>
+
+
+<footer>
+  © 2026 GitaAI • Dharma • Karma • Moksha
+</footer>
+
+<script>
+function go(topic){
+  window.location.href =
+    "chat.html?topic=" + encodeURIComponent(topic);
+}
+</script>
+
+</body>
+</html>

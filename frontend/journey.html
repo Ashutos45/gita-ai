@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Journey • GitaAI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  if (!localStorage.getItem("gitaToken")) {
+    window.location.replace("signin.html");
+  }
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:Inter,system-ui,sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(250,204,21,.08), transparent 40%),
+    linear-gradient(rgba(2,6,23,.96),rgba(2,6,23,.96)),
+    url("./mahabharata-silhouette-symbol-icon-great-hindu-mythology-96933694.webp");
+  background-size:cover;
+  background-position:center;
+  min-height:100vh;
+  color:#e5e7eb;
+}
+
+/* ===== HEADER ===== */
+.header{
+  padding:26px 32px;
+  border-bottom:1px solid rgba(250,204,21,.18);
+  background:rgba(2,6,23,.97);
+  display:flex;
+  align-items:center;
+  gap:14px;
+  backdrop-filter:blur(8px);
+}
+
+.header h1{
+  font-family:Cinzel,serif;
+  color:#facc15;
+  font-size:24px;
+  letter-spacing:.6px;
+}
+
+/* ===== CONTAINER ===== */
+.container{
+  max-width:1200px;
+  margin:50px auto;
+  padding:0 26px;
+}
+
+/* ===== PROFILE ===== */
+.profile{
+  display:flex;
+  gap:26px;
+  align-items:center;
+  background:linear-gradient(
+    135deg,
+    rgba(15,23,42,.85),
+    rgba(2,6,23,.85)
+  );
+  border-radius:26px;
+  padding:30px;
+  box-shadow:0 40px 100px rgba(0,0,0,.65);
+  margin-bottom:44px;
+  backdrop-filter:blur(10px);
+}
+
+.avatar{
+  width:96px;
+  height:96px;
+  border-radius:50%;
+  background:radial-gradient(circle at top,#fde68a,#facc15);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:40px;
+  font-weight:900;
+  color:#020617;
+  box-shadow:
+    0 0 0 6px rgba(250,204,21,.12),
+    0 25px 70px rgba(250,204,21,.5);
+}
+
+.profile h2{
+  font-size:24px;
+  color:#fde68a;
+  margin-bottom:6px;
+}
+
+.profile p{
+  font-size:15px;
+  color:#cbd5f5;
+  opacity:.9;
+}
+
+/* ===== GRID ===== */
+.grid{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:34px;
+}
+
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr}
+}
+
+/* ===== CARDS ===== */
+.card{
+  background:rgba(15,23,42,.72);
+  border-radius:28px;
+  padding:30px;
+  box-shadow:0 40px 100px rgba(0,0,0,.6);
+  backdrop-filter:blur(12px);
+}
+
+.card h3{
+  font-family:Cinzel,serif;
+  color:#facc15;
+  margin-bottom:26px;
+  letter-spacing:.5px;
+}
+
+/* ===== TIMELINE ===== */
+.timeline{
+  position:relative;
+  padding-left:52px;
+}
+
+.timeline::before{
+  content:"";
+  position:absolute;
+  left:22px;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:linear-gradient(
+    to bottom,
+    transparent,
+    rgba(250,204,21,.7),
+    transparent
+  );
+}
+
+.event{
+  position:relative;
+  margin-bottom:36px;
+  padding:20px 22px;
+  border-radius:20px;
+  background:rgba(2,6,23,.85);
+  transition:.35s ease;
+}
+
+.event:hover{
+  transform:translateX(8px);
+  box-shadow:0 30px 90px rgba(250,204,21,.22);
+}
+
+.event::before{
+  content:"";
+  position:absolute;
+  left:-38px;
+  top:24px;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#facc15;
+  box-shadow:0 0 22px rgba(250,204,21,1);
+}
+
+.event h4{
+  color:#fde68a;
+  margin-bottom:6px;
+}
+
+.event p{
+  font-size:14px;
+  color:#cbd5f5;
+  line-height:1.5;
+}
+
+/* ===== STATS ===== */
+.stat{
+  background:linear-gradient(135deg,#1e293b,#020617);
+  border-radius:24px;
+  padding:24px;
+  margin-bottom:20px;
+  box-shadow:0 25px 70px rgba(0,0,0,.55);
+  transition:.35s;
+}
+
+.stat:hover{
+  transform:translateY(-8px);
+  box-shadow:0 45px 110px rgba(250,204,21,.3);
+}
+
+.stat strong{
+  font-size:34px;
+  color:#facc15;
+}
+
+.stat span{
+  display:block;
+  margin-top:6px;
+  font-size:14px;
+  color:#e5e7eb;
+  opacity:.9;
+}
+
+/* ===== QUOTE ===== */
+.quote{
+  margin-top:32px;
+  padding:26px;
+  border-radius:22px;
+  background:linear-gradient(
+    135deg,
+    rgba(250,204,21,.22),
+    rgba(2,6,23,.9)
+  );
+  font-style:italic;
+  color:#fde68a;
+  box-shadow:0 20px 60px rgba(250,204,21,.25);
+}
+/* ===== NAVBAR ===== */
+.navbar{
+  position:sticky;
+  top:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 32px;
+  background:rgba(2,6,23,.96);
+  border-bottom:1px solid rgba(250,204,21,.18);
+  backdrop-filter:blur(10px);
+}
+
+.nav-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:#facc15;
+  font-family:Cinzel,serif;
+  font-size:20px;
+}
+
+.brand{
+  letter-spacing:.6px;
+}
+
+.nav-links{
+  display:flex;
+  gap:26px;
+  list-style:none;
+}
+
+.nav-links a{
+  text-decoration:none;
+  color:#cbd5f5;
+  font-size:14.5px;
+  padding:6px 10px;
+  border-radius:10px;
+  transition:.3s;
+}
+
+.nav-links a:hover{
+  background:rgba(250,204,21,.15);
+  color:#fde68a;
+}
+
+.nav-links .active{
+  background:rgba(250,204,21,.25);
+  color:#facc15;
+}
+
+.nav-user{
+  background:rgba(250,204,21,.15);
+  padding:6px 14px;
+  border-radius:14px;
+  color:#fde68a;
+  font-size:14px;
+}
+
+/* ===== MOBILE ===== */
+@media(max-width:850px){
+  .nav-links{
+    display:none;
+  }
+}
+/* ===== TOP BAR (GLOBAL) ===== */
+.topbar{
+  height:92px;
+  display:grid;
+  grid-template-columns:64px 1fr 140px;
+  align-items:center;
+  background:rgba(10,6,3,.95);
+  border-bottom:1px solid rgba(250,204,21,.35);
+}
+
+.top-left{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.om{
+  color:#facc15;
+  font-size:22px;
+}
+
+.top-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.top-center h2{
+  font-family:"Cinzel",serif;
+  color:#facc15;
+  font-size:20px;
+}
+
+.subnav{
+  display:flex;
+  gap:18px;
+  font-size:14px;
+}
+
+.subnav a{
+  text-decoration:none;
+  color:#cbd5f5;
+  padding:4px 8px;
+  border-radius:6px;
+  transition:.25s;
+}
+
+.subnav a:hover{
+  color:#facc15;
+  background:rgba(250,204,21,.12);
+}
+
+.subnav a.active{
+  color:#facc15;
+  border-bottom:2px solid #facc15;
+}
+
+.top-right{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+</style>
+</head>
+
+<body>
+<!-- ===== TOP NAV ===== -->
+<div class="topbar">
+  <div class="top-left">
+    <span class="om">ॐ</span>
+  </div>
+
+  <div class="top-center">
+    <h2>My Journey</h2>
+
+    <div class="subnav">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chat.html">Chat</a>
+      <a href="daily.html">Daily Wisdom</a>
+      <a href="topics.html">Topics</a>
+      <a href="journey.html" class="active">Journey</a>
+    </div>
+  </div>
+
+  <div class="top-right">
+    <span id="navUser" style="
+      color:#fde68a;
+      font-size:14px;
+      padding:6px 14px;
+      border-radius:14px;
+      background:rgba(250,204,21,.15);
+    ">
+      Seeker
+    </span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- PROFILE -->
+  <div class="profile">
+    <div class="avatar" id="avatar">U</div>
+    <div>
+      <h2 id="userName">Seeker</h2>
+      <p>Your path of reflection, action, and wisdom</p>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- TIMELINE -->
+    <div class="card">
+      <h3>Spiritual Timeline</h3>
+      <div class="timeline">
+
+        <div class="event">
+          <h4>Started Journey</h4>
+          <p>You began seeking guidance through GitaAI</p>
+        </div>
+
+        <div class="event">
+          <h4>First Question Asked</h4>
+          <p>Chose curiosity over fear</p>
+        </div>
+
+        <div class="event">
+          <h4>Shift in Perspective</h4>
+          <p>Moved from anxiety toward clarity of action</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div>
+      <div class="stat">
+        <strong>12</strong>
+        <span>Questions Asked</span>
+      </div>
+
+      <div class="stat">
+        <strong>5</strong>
+        <span>Days of Reflection</span>
+      </div>
+
+      <div class="stat">
+        <strong>3</strong>
+        <span>Core Themes Explored</span>
+      </div>
+
+      <div class="quote">
+        “You have the right to action, not to its fruits.”
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ================= USER ================= */
+const userName = localStorage.getItem("gitaUser") || "Seeker";
+document.getElementById("userName").innerText = userName;
+document.getElementById("avatar").innerText = userName[0].toUpperCase();
+document.getElementById("navUser").innerText = userName;
+
+/* ================= DATA (SIMULATED INTELLIGENCE) ================= */
+/*
+Expected localStorage structure used by other pages:
+- gitaQuestions : number
+- gitaThemes : array (["karma","dharma"])
+- gitaStartDate : ISO string
+*/
+
+const questions = Number(localStorage.getItem("gitaQuestions")) || 0;
+const themes = JSON.parse(localStorage.getItem("gitaThemes") || "[]");
+document.querySelectorAll(".stat strong")[0].innerText = questions;
+
+let startDate = localStorage.getItem("gitaStartDate");
+if(!startDate){
+  startDate = new Date().toISOString();
+  localStorage.setItem("gitaStartDate", startDate);
+}
+
+const days =
+  Math.max(
+    1,
+    Math.ceil(
+      (Date.now() - new Date(startDate)) / (1000 * 60 * 60 * 24)
+    )
+  );
+
+/* ================= UPDATE STATS ================= */
+document.querySelectorAll(".stat strong")[0].innerText = questions;
+document.querySelectorAll(".stat strong")[1].innerText = days;
+document.querySelectorAll(".stat strong")[2].innerText = themes.length || 1;
+
+/* ================= TIMELINE LOGIC ================= */
+const timeline = document.querySelector(".timeline");
+timeline.innerHTML = ""; // reset
+
+const events = [];
+
+events.push({
+  title: "Started Journey",
+  text: "Recognized inner conflict and began seeking clarity"
+});
+
+if(questions > 0){
+  events.push({
+    title: "First Question Asked",
+    text: "Accepted uncertainty instead of avoiding it"
+  });
+}
+
+if(questions >= 5){
+  events.push({
+    title: "Growing Awareness",
+    text: "Learning to pause, observe, and respond wisely"
+  });
+}
+
+if(themes.length >= 2){
+  events.push({
+    title: "Shift in Perspective",
+    text: "Actions guided by understanding, not impulse"
+  });
+}
+
+events.forEach(e=>{
+  const div = document.createElement("div");
+  div.className = "event";
+  div.innerHTML = `<h4>${e.title}</h4><p>${e.text}</p>`;
+  timeline.appendChild(div);
+});
+
+/* ================= DAILY QUOTE (STABLE PER DAY) ================= */
+const quotes = [
+  "You have the right to action, not to its fruits.",
+  "A disciplined mind brings lasting peace.",
+  "One who sees action in inaction is truly wise.",
+  "Detach from results, remain rooted in duty.",
+  "The mind is restless, but it can be mastered."
+];
+
+const todayKey = new Date().toDateString();
+let dailyQuote = localStorage.getItem("gitaDailyQuote");
+
+if(!dailyQuote || localStorage.getItem("gitaQuoteDate") !== todayKey){
+  dailyQuote = quotes[Math.floor(Math.random() * quotes.length)];
+  localStorage.setItem("gitaDailyQuote", dailyQuote);
+  localStorage.setItem("gitaQuoteDate", todayKey);
+}
+
+document.querySelector(".quote").innerText = `“${dailyQuote}”`;
+</script>
+
+</body>
+</html>

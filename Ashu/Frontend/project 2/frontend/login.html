@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Login</title>
+
+<!-- AOS CSS -->
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-image: url('./Ashu.jpeg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .wrapper {
+        width: 380px;
+        height: 420px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.12);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .slider {
+        width: 200%;
+        height: 100%;
+        display: flex;
+        transition: transform .6s ease;
+    }
+
+    .wrapper.admin .slider {
+        transform: translateX(-50%);
+    }
+
+    .panel {
+        width: 50%;
+        padding: 30px;
+        box-sizing: border-box;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    input {
+        width: 100%;
+        padding: 11px;
+        margin: 12px 0;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        transition: border .3s;
+    }
+
+    input:focus {
+        border-color: #2ea86f;
+        outline: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 11px;
+        background: #2ea86f;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: transform .2s, background .3s;
+    }
+
+    button:hover {
+        background: #23915f;
+        transform: translateY(-2px);
+    }
+
+    .switch {
+        margin-top: 15px;
+        text-align: center;
+        color: #2ea86f;
+        cursor: pointer;
+        font-size: 14px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="wrapper" id="wrapper" data-aos="zoom-in">
+
+    <div class="slider">
+
+        <!-- USER -->
+        <div class="panel" data-aos="fade-right">
+            <h2>User Login</h2>
+            <input type="text" id="uName" placeholder="Username">
+            <input type="password" id="uPass" placeholder="Password">
+            <button onclick="loginUser()">Login</button>
+            <div class="switch" onclick="showAdmin()">Admin Login →</div>
+        </div>
+
+        <!-- ADMIN -->
+        <div class="panel" data-aos="fade-left">
+            <h2>Admin Login</h2>
+            <input type="text" id="aName" placeholder="Admin ID">
+            <input type="password" id="aPass" placeholder="Password">
+            <button onclick="loginAdmin()">Login</button>
+            <div class="switch" onclick="showUser()">← User Login</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- AOS JS -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    AOS.init({
+        duration: 700,
+        once: true
+    });
+
+    const wrapper = document.getElementById("wrapper");
+    const ADMIN = { name: "admin", pass: "admin123" };
+
+    function showAdmin() {
+        wrapper.classList.add("admin");
+    }
+
+    function showUser() {
+        wrapper.classList.remove("admin");
+    }
+
+    function loginUser() {
+        const name = document.getElementById("uName").value;
+        const pass = document.getElementById("uPass").value;
+
+        if (!name || !pass) {
+            alert("Fill all fields");
+            return;
+        }
+
+        localStorage.setItem("currentUser", name);
+        localStorage.setItem("role", "user");
+        alert("User logged in");
+    }
+
+    function loginAdmin() {
+        const name = document.getElementById("aName").value;
+        const pass = document.getElementById("aPass").value;
+
+        if (name === ADMIN.name && pass === ADMIN.pass) {
+            localStorage.setItem("currentUser", name);
+            localStorage.setItem("role", "admin");
+            alert("Admin logged in");
+        } else {
+            alert("Invalid admin credentials");
+        }
+    }
+</script>
+
+</body>
+</html>

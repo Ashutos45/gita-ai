@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GitaAI • Chat with Krishna</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  if (!localStorage.getItem("gitaToken")) {
+    window.location.replace("signin.html");
+  }
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Crimson+Text&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;}
+
+body{
+  font-family:"Crimson Text",serif;
+  background:
+    linear-gradient(rgba(2,6,23,.92),rgba(2,6,23,.92)),
+    url("./unnamed.jpg");
+  background-size:cover;
+  background-position:center;
+  overflow:hidden;
+}
+
+/* ===== GLOW ===== */
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:radial-gradient(circle at 30% 20%,rgba(250,204,21,.08),transparent 45%);
+  animation:breath 10s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes breath{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}
+
+/* ===== TOP BAR ===== */
+/* ===== TOP BAR ===== */
+.topbar{
+  height:92px;
+  display:grid;
+  grid-template-columns:64px 1fr 64px;
+  align-items:center;
+  background:rgba(10,6,3,.95);
+  border-bottom:1px solid rgba(250,204,21,.35);
+}
+
+/* LEFT */
+.top-left{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.om{
+  color:#facc15;
+  font-size:22px;
+}
+
+/* CENTER */
+.top-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.top-center h2{
+  font-family:"Cinzel", serif;
+  color:#facc15;
+  font-size:20px;
+  margin:0;
+}
+
+/* SUB NAV */
+.subnav{
+  display:flex;
+  gap:18px;
+  font-size:14px;
+}
+
+.subnav a{
+  text-decoration:none;
+  color:#cbd5f5;
+  padding:4px 8px;
+  border-radius:6px;
+  transition:.25s;
+}
+
+.subnav a:hover{
+  color:#facc15;
+  background:rgba(250,204,21,.12);
+}
+
+.subnav a.active{
+  color:#facc15;
+  border-bottom:2px solid #facc15;
+}
+
+/* RIGHT */
+.top-right{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.icon-btn{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:1px solid rgba(250,204,21,.45);
+  background:transparent;
+  color:#facc15;
+  cursor:pointer;
+}
+
+/* ===== LIVE BUTTON ===== */
+#voiceToggle{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:1px solid rgba(250,204,21,.45);
+  background:rgba(250,204,21,.15);
+  color:#facc15;
+  font-size:18px;
+  cursor:pointer;
+}
+#voiceToggle.active{
+  background:#facc15;
+  color:#2b1b0f;
+}
+
+/* ===== LAYOUT ===== */
+.chat-wrapper{
+  height:calc(100vh - 92px);
+  display:flex;
+  flex-direction:column;
+}
+
+.chat{
+  flex:1;
+  padding:34px;
+  overflow-y:auto;
+}
+
+/* ===== MESSAGE ===== */
+.msg{
+  max-width:70%;
+  padding:14px 18px;        /* ⬅️ reduced */
+  margin-bottom:14px;
+  border-radius:14px;
+  font-size:15px;           /* ⬅️ reduced */
+  line-height:1.5;
+}
+.msg.ai#welcomeMsg{
+  padding:12px 16px;
+  font-size:14px;
+}
+.msg.user{margin-left:auto;background:linear-gradient(#efe2c0,#e4cf9c);}
+.msg.ai{margin-right:auto;background:linear-gradient(#f8ebc8,#eedaa5);}
+
+.typing{font-size:14px;color:#7a5c1d;margin:6px 0 18px 10px;font-style:italic;}
+
+/* ===== INPUT ===== */
+.input-row{
+  position:sticky;
+  bottom:0;
+  z-index:10;
+
+  display:flex;
+  gap:12px;
+  padding:12px;            /* ⬅️ slightly smaller */
+  background:rgba(10,6,3,.95);
+  border-top:1px solid rgba(250,204,21,.35);
+}
+textarea{
+  flex:1;
+  height:52px;
+  resize:none;
+  border:none;
+  border-radius:12px;
+  padding:14px 16px;
+  font-size:17px;
+  background:linear-gradient(#f3e6c4,#e7d29a);
+}
+button{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  border:none;
+  cursor:pointer;
+  background:#facc15;
+}
+.mic{background:#2b1b0f;color:#facc15;}
+
+/* ===== KRISHNA ===== */
+#krishna{
+  position:fixed;
+  right:28px;
+  bottom:120px;
+  width:220px;
+  opacity:0;
+  transform:translateY(20px) scale(.95);
+  transition:.6s ease;
+  pointer-events:none;
+}
+#krishna.active{opacity:1;transform:translateY(0) scale(1);}
+#krishna img{width:100%;border-radius:14px;filter:drop-shadow(0 30px 80px rgba(250,204,21,.45));}
+
+/* ===== VOICE UI ===== */
+#voiceUI{
+  flex:1;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+#voiceUI.active{display:flex;}
+
+.voice-card{
+  width:360px;
+  padding:40px 30px;
+  text-align:center;
+  border-radius:24px;
+  background:linear-gradient(#f6e7c6,#ecd9a4);
+}
+.voice-circle{
+  width:96px;height:96px;margin:0 auto 20px;border-radius:50%;
+  background:rgba(250,204,21,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:38px;
+}
+/* ===== LIVE VOICE ANIMATION ===== */
+
+.voice-circle{
+  position:relative;
+  overflow:visible;
+}
+
+/* Outer pulse ring */
+.voice-circle::before,
+.voice-circle::after{
+  content:"";
+  position:absolute;
+  inset:-12px;
+  border-radius:50%;
+  border:2px solid rgba(250,204,21,.45);
+  opacity:0;
+  transform:scale(.6);
+}
+
+/* Ring 1 */
+.voice-circle::before{
+  animation:voicePulse 2.4s ease-out infinite;
+}
+
+/* Ring 2 (delayed) */
+.voice-circle::after{
+  animation:voicePulse 2.4s ease-out infinite;
+  animation-delay:1.2s;
+}
+
+/* Breathing glow */
+.voice-circle.active{
+  animation:voiceBreath 1.8s ease-in-out infinite;
+  box-shadow:
+    0 0 30px rgba(250,204,21,.55),
+    0 0 80px rgba(250,204,21,.35);
+}
+
+/* ===== KEYFRAMES ===== */
+
+@keyframes voicePulse{
+  0%{
+    opacity:.7;
+    transform:scale(.6);
+  }
+  100%{
+    opacity:0;
+    transform:scale(1.6);
+  }
+}
+
+@keyframes voiceBreath{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+/* ===== APP LAYOUT ===== */
+.app{
+  height:calc(100vh - 92px);
+  display:flex;
+}
+
+/* ===== LEFT CHAT HISTORY ===== */
+.chat-history{
+  width:260px;
+  background:rgba(15,23,42,.95);
+  border-right:1px solid rgba(250,204,21,.25);
+  padding:16px;
+  overflow-y:auto;
+}
+
+.chat-history h3{
+  font-family:"Cinzel",serif;
+  color:#facc15;
+  font-size:16px;
+  margin-bottom:14px;
+}
+
+.history-item{
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:10px;
+  cursor:pointer;
+  background:#020617;
+  color:#cbd5f5;
+  font-size:14px;
+  transition:.25s;
+}
+
+.history-item:hover{
+  background:#1e293b;
+  color:#facc15;
+}
+
+/* ===== CHAT AREA (CENTER) ===== */
+.chat-main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Keep chat scroll nice */
+.chat{
+  padding:28px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .chat-history{
+    display:none;
+  }
+}
+/* ===== CHAT HISTORY PANEL ===== */
+.chat-history{
+  width:260px;
+  background:rgba(15,23,42,.95);
+  border-right:1px solid rgba(250,204,21,.25);
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Title */
+.chat-history h3{
+  font-family:"Cinzel",serif;
+  color:#facc15;
+  font-size:16px;
+  margin-bottom:10px;
+}
+
+/* Search */
+#searchChat{
+  padding:10px 12px;
+  border-radius:10px;
+  border:none;
+  margin-bottom:12px;
+  background:#020617;
+  color:#e5e7eb;
+  font-size:14px;
+}
+
+/* Chat list */
+#chatList{
+  flex:1;
+  overflow-y:auto;
+}
+
+/* Chat item */
+.history-item{
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:8px;
+  cursor:pointer;
+  background:#020617;
+  color:#cbd5f5;
+  font-size:14px;
+  transition:.25s;
+}
+
+.history-item:hover,
+.history-item.active{
+  background:#1e293b;
+  color:#facc15;
+}
+
+/* New chat */
+/* ===== SIDEBAR ACTIONS (BOTTOM) ===== */
+/* ===== PREMIUM SIDEBAR ACTIONS ===== */
+.sidebar-actions{
+  padding:18px 14px;
+  background:transparent;   /* 🔥 remove ugly box */
+  border-top:none;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+/* Big buttons */
+.sidebar-actions button{
+  width:100%;
+  padding:18px;
+  border-radius:22px;
+  border:none;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  letter-spacing:.3px;
+}
+
+/* New Chat – premium dark */
+/* ===== NEW CHAT (PREMIUM) ===== */
+.new-chat-btn{
+  background:linear-gradient(135deg,#1e293b,#020617);
+  color:#facc15;
+
+  padding:18px 20px;
+  border-radius:28px;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:.4px;
+
+  border:1px solid rgba(250,204,21,.35);
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.45),
+    inset 0 0 20px rgba(250,204,21,.12);
+
+  transition:.25s ease;
+}
+
+.new-chat-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:
+    0 14px 36px rgba(0,0,0,.6),
+    inset 0 0 24px rgba(250,204,21,.18);
+}
+/* Live – bold & clear */
+.live-btn{
+  background:linear-gradient(135deg,#22c55e,#16a34a);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  box-shadow:0 10px 30px rgba(34,197,94,.35);
+}
+
+/* Bigger live dot */
+.live-dot{
+  width:12px;
+  height:12px;
+  background:#4ade80;
+  border-radius:50%;
+
+  box-shadow:
+    0 0 0 0 rgba(74,222,128,.6);
+
+  animation:pulse 1.6s infinite;
+}
+/* Chat row layout */
+.history-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+/* Title */
+.chat-title{
+  flex:1;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+/* 3-dot button */
+.chat-menu{
+  background:none;
+  border:none;
+  color:#94a3b8;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.chat-menu:hover{
+  color:#facc15;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP NAV ===== -->
+<div class="topbar">
+  <div class="top-left">
+    <span class="om">ॐ</span>
+  </div>
+
+  <div class="top-center">
+    <h2>Chat with Krishna</h2>
+
+    <!-- SUB NAV -->
+    <div class="subnav">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chat.html" class="active">Chat</a>
+      <a href="daily.html">Daily Wisdom</a>
+      <a href="topics.html">Topics</a>
+      <a href="journey.html">Journey</a>
+    </div>
+  </div>
+
+  <div class="top-right">
+    <button id="voiceToggle" class="icon-btn" onclick="toggleVoiceUI()">🎧</button>
+  </div>
+</div>
+<!-- ===== MAIN APP ===== -->
+<div class="app">
+
+  <!-- LEFT: CHAT HISTORY -->
+<aside class="chat-history">
+
+  <h3>Conversations</h3>
+
+  <!-- SEARCH -->
+  <input
+    type="text"
+    id="searchChat"
+    placeholder="Search chats..."
+    onkeyup="filterChats()"
+  />
+
+  <!-- CHAT LIST -->
+  <div id="chatList">
+    <!-- dynamically filled -->
+  </div>
+
+  <div class="sidebar-actions">
+  <button class="new-chat-btn" onclick="createNewChat()">
+  ＋ New Chat
+</button>
+
+  <button class="live-btn" onclick="toggleVoiceUI()">
+    <span class="live-dot"></span>
+    Live
+  </button>
+</div>
+
+</aside>
+
+  <!-- CENTER: CHAT -->
+  <div class="chat-main">
+
+    <!-- CHAT AREA -->
+    <div class="chat" id="chat">
+      <div class="msg ai" id="welcomeMsg"></div>
+    </div>
+
+    <!-- LIVE VOICE UI -->
+    <div id="voiceUI">
+      <div class="voice-card">
+        <div class="voice-circle">🎤</div>
+        <h3>Live Voice Conversation</h3>
+      </div>
+    </div>
+
+    <!-- INPUT BAR -->
+    <div class="input-row">
+      <textarea id="q" placeholder="Type your message..."></textarea>
+      <button class="mic" onclick="startMicOnce()">🎙️</button>
+      <button onclick="ask()">➤</button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- KRISHNA AVATAR -->
+<div id="krishna">
+  <img src="./jagannath-piercing-eyes-7qhn3an2yjun1fbo.jpg" alt="Krishna">
+</div>
+
+<!-- VOICE STATUS BAR -->
+<div id="voiceStatus" style="
+  display:none;
+  position:fixed;
+  top:100px;
+  left:50%;
+  transform:translateX(-50%);
+  background:linear-gradient(#f8ebc8,#eedaa5);
+  color:#3b2510;
+  padding:12px 24px;
+  border-radius:14px;
+  font-size:14px;
+  font-weight:600;
+  z-index:9000;
+  box-shadow:0 8px 30px rgba(0,0,0,.35);
+  cursor:pointer;
+" onclick="document.getElementById('voiceStatus').style.display='none'">
+  ⚠ <span id="voiceStatusText"></span> &nbsp; ✕
+</div>
+
+</body>
+<script>
+let liveMode = false;
+let micLocked = false;
+
+const userName = localStorage.getItem("gitaUser") || "Seeker";
+document.getElementById("welcomeMsg").innerText =
+  `Welcome, ${userName}. Speak freely — wisdom begins with honesty.`;
+
+const chat = document.getElementById("chat");
+const krishna = document.getElementById("krishna");
+
+/* Show dismissible voice status bar — does NOT add to chat history */
+function showVoiceError(msg) {
+  const bar = document.getElementById("voiceStatus");
+  const txt = document.getElementById("voiceStatusText");
+  if (bar && txt) {
+    txt.textContent = msg;
+    bar.style.display = "block";
+    setTimeout(() => { bar.style.display = "none"; }, 5000);
+  }
+}
+
+
+/* =========================
+   TEXT → SPEECH (KRISHNA)
+========================= */
+
+/* =========================
+   ADD MESSAGE TO CHAT
+========================= */
+function addUserMessage(text){
+  const div = document.createElement("div");
+  div.className = "msg user";
+  div.textContent = text; // Safe against XSS
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+function addAIMessage(text){
+  const div = document.createElement("div");
+  div.className = "msg ai";
+  div.innerHTML = text; // Content contains pre-formatted HTML elements
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* =========================
+   AI API CALL
+========================= */
+const API_BASE = window.location.origin;
+
+let token = null;
+async function ensureLogin() {
+  const storedToken = localStorage.getItem("gitaToken");
+  if (!storedToken) {
+    console.warn("No session token found. Redirecting to login...");
+    window.location.replace("signin.html");
+    throw new Error("Authentication required.");
+  }
+  token = storedToken;
+  console.log("Session authenticated using browser token.");
+}
+
+async function generateKrishnaReply(userText) {
+  try {
+    // 🔐 Ensure login
+    await ensureLogin();
+
+    const response = await fetch(API_BASE + "/chat/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({
+         text: userText,
+         voice_mode: liveMode
+})    });
+
+    console.log("Chat status:", response.status);
+
+    // ❌ Server error handling
+    if (!response.ok) {
+      console.error("Server error:", response.status);
+      return "⚠ Server error. Please try again.";
+    }
+
+    const data = await response.json();
+    console.log("Backend response:", data);
+
+    if (!data || !data.text) {
+      return "⚠ Unexpected server response.";
+    }
+
+    const ai = data.text;
+
+    let html = "";
+
+    // 🕉 If verse exists → show sloka block
+    if (ai.chapter && ai.verse_number && ai.sanskrit) {
+      html += `
+        <div style="
+          margin-bottom:18px;
+          padding:14px;
+          border-radius:12px;
+          background:linear-gradient(#f8ebc8,#eedaa5);
+        ">
+          <div style="
+            font-weight:bold;
+            margin-bottom:10px;
+          ">
+            Bhagavad Gita — Chapter ${ai.chapter}, Verse ${ai.verse_number}
+          </div>
+
+          <div style="
+            font-family:'Noto Serif Devanagari', serif;
+            font-size:20px;
+            line-height:1.7;
+          ">
+            ${ai.sanskrit}
+          </div>
+        </div>
+      `;
+    }
+
+    // 🧠 Explanation (always shown)
+    html += `
+      <div style="line-height:1.8;">
+        ${ai.explanation || "Wisdom is silent for a moment..."}
+      </div>
+    `;
+
+    return html;
+
+  } catch (error) {
+    console.error("API ERROR:", error);
+    return "Connection to wisdom failed. Try again.";
+  }
+}
+ 
+
+
+/* =========================
+   TEXT CHAT (NORMAL)
+========================= */
+async function ask(){
+  const q = document.getElementById("q");
+  if(!q.value.trim()) return;
+
+  const userText = q.value;
+  q.value = "";
+
+  addUserMessage(userText);
+
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.innerText = "Krishna is contemplating…";
+  chat.appendChild(typing);
+
+  krishna.classList.add("active");
+
+  setTimeout(async () => {
+    typing.remove();
+
+    const reply = await generateKrishnaReply(userText);
+    addAIMessage(reply);
+
+    setTimeout(() => krishna.classList.remove("active"), 1000);
+  }, 1200);
+}
+</script>
+
+<script>
+/* ===== CHAT HISTORY — FIXED ===== */
+
+let chats = JSON.parse(localStorage.getItem("gitaChats")) || {};
+
+// Auto-create a chat session on load so saveMessage never triggers openChat mid-flow
+let currentChat = localStorage.getItem("currentChat") || null;
+if (!currentChat || !chats[currentChat]) {
+  currentChat = "chat_" + Date.now();
+  chats[currentChat] = { title: "New Conversation", messages: [] };
+  localStorage.setItem("gitaChats", JSON.stringify(chats));
+  localStorage.setItem("currentChat", currentChat);
+}
+
+/* ===== RENDER SIDEBAR LIST ===== */
+function loadChats() {
+  const list = document.getElementById("chatList");
+  list.innerHTML = "";
+
+  Object.keys(chats).forEach(id => {
+    const div = document.createElement("div");
+    div.className = "history-item" + (id === currentChat ? " active" : "");
+
+    const titleSpan = document.createElement("span");
+    titleSpan.className = "chat-title";
+    titleSpan.textContent = chats[id].title;  // textContent — safe
+
+    const menuBtn = document.createElement("button");
+    menuBtn.className = "chat-menu";
+    menuBtn.textContent = "⋮";
+    menuBtn.onclick = (e) => openChatMenu(e, id);
+
+    div.appendChild(titleSpan);
+    div.appendChild(menuBtn);
+    div.onclick = () => switchToChat(id);
+
+    list.appendChild(div);
+  });
+}
+
+/* ===== SWITCH TO A DIFFERENT CHAT (replays history) ===== */
+function switchToChat(id) {
+  if (id === currentChat) return;   // already here — don't wipe
+  currentChat = id;
+  localStorage.setItem("currentChat", id);
+
+  // Replay saved messages into the chat area
+  chat.innerHTML = "";
+  chats[id].messages.forEach(m => {
+    const div = document.createElement("div");
+    div.className = "msg " + m.role;
+    div.innerHTML = m.text;  // HTML content (AI messages contain markup)
+    chat.appendChild(div);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+  loadChats();
+}
+
+/* ===== OPEN CHAT (alias kept for menu buttons) ===== */
+function openChat(id) { switchToChat(id); }
+
+/* ===== NEW CHAT ===== */
+function createNewChat() {
+  const id = "chat_" + Date.now();
+  chats[id] = { title: "New Conversation", messages: [] };
+  currentChat = id;
+  localStorage.setItem("gitaChats", JSON.stringify(chats));
+  localStorage.setItem("currentChat", id);
+
+  // Clear chat area for fresh session — user explicitly requested new chat
+  chat.innerHTML = "";
+  const welcome = document.createElement("div");
+  welcome.className = "msg ai";
+  welcome.id = "welcomeMsg";
+  welcome.textContent = "Welcome, " + (localStorage.getItem("gitaUser") || "Seeker") + ". Speak freely — wisdom begins with honesty.";
+  chat.appendChild(welcome);
+
+  loadChats();
+}
+
+/* ===== SAVE MESSAGE (never touches chat area DOM) ===== */
+function saveMessage(role, text) {
+  if (!chats[currentChat]) {
+    chats[currentChat] = { title: "New Conversation", messages: [] };
+  }
+
+  // Strip HTML for storage title
+  const plainText = text.replace(/<[^>]*>/g, "").trim();
+
+  chats[currentChat].messages.push({ role, text });
+
+  // Set title from first user message
+  if (chats[currentChat].messages.length === 1 && role === "user") {
+    chats[currentChat].title = plainText.slice(0, 28) + (plainText.length > 28 ? "…" : "");
+  }
+
+  localStorage.setItem("gitaChats", JSON.stringify(chats));
+  loadChats();
+}
+
+/* ===== HOOK INTO CHAT FUNCTIONS ===== */
+const originalAddUser = addUserMessage;
+addUserMessage = function(text) {
+  originalAddUser(text);
+  saveMessage("user", text);
+};
+
+const originalAddAI = addAIMessage;
+addAIMessage = function(text) {
+  originalAddAI(text);
+  saveMessage("ai", text);
+};
+
+/* INIT */
+loadChats();
+</script>
+
+<script>
+let recognition = null;
+let isSpeechRecActive = false;
+let synth = window.speechSynthesis;
+let currentUtterance = null;
+
+// Initialize Speech Recognition
+function getSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  
+  const rec = new SpeechRecognition();
+  rec.continuous = false;
+  rec.interimResults = false;
+  rec.lang = localStorage.getItem("gitaLanguage") || "en-IN";
+  
+  rec.onstart = () => {
+    isSpeechRecActive = true;
+    console.log("Web Speech: Listening...");
+    const voiceCircle = document.querySelector(".voice-circle");
+    if (voiceCircle) voiceCircle.classList.add("active");
+  };
+  
+  rec.onresult = async (event) => {
+    const text = event.results[0][0].transcript;
+    console.log("Web Speech: Transcribed:", text);
+    
+    // Add user message
+    addUserMessage(text);
+    
+    const typing = document.createElement("div");
+    typing.className = "typing";
+    typing.innerText = "Krishna is contemplating…";
+    chat.appendChild(typing);
+    krishna.classList.add("active");
+    
+    try {
+      const replyHtml = await generateKrishnaReply(text);
+      typing.remove();
+      addAIMessage(replyHtml);
+      
+      // Parse plain text for speech synthesis
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = replyHtml;
+      const textToSpeak = tempDiv.innerText || tempDiv.textContent || "";
+      
+      speakWisdom(textToSpeak, () => {
+        if (liveMode) {
+          startSpeechRec();
+        }
+      });
+    } catch (err) {
+      typing.remove();
+      console.error(err);
+      showVoiceError("Wisdom retrieval failed. Please try again.");
+      if (liveMode) {
+        setTimeout(startSpeechRec, 2000);
+      }
+    }
+  };
+  
+  rec.onerror = (event) => {
+    console.error("Web Speech error:", event.error);
+    if (event.error === 'no-speech') {
+      if (liveMode) startSpeechRec();
+      return;
+    }
+    showVoiceError("Microphone issue: " + event.error);
+    isSpeechRecActive = false;
+    const voiceCircle = document.querySelector(".voice-circle");
+    if (voiceCircle) voiceCircle.classList.remove("active");
+  };
+  
+  rec.onend = () => {
+    isSpeechRecActive = false;
+    const voiceCircle = document.querySelector(".voice-circle");
+    if (voiceCircle) voiceCircle.classList.remove("active");
+    console.log("Web Speech: Stopped.");
+  };
+  
+  return rec;
+}
+
+function startSpeechRec() {
+  if (!recognition) {
+    recognition = getSpeechRecognition();
+  }
+  if (recognition && !isSpeechRecActive) {
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Failed to start SpeechRecognition:", e);
+    }
+  }
+}
+
+function stopSpeechRec() {
+  if (recognition && isSpeechRecActive) {
+    try {
+      recognition.stop();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if (synth) {
+    synth.cancel();
+  }
+}
+
+function speakWisdom(text, onEndCallback) {
+  if (!synth) {
+    if (onEndCallback) onEndCallback();
+    return;
+  }
+  synth.cancel();
+  
+  // Clean up text
+  let cleanText = text.replace(/ॐ/g, "").replace(/⚠/g, "").replace(/✕/g, "").trim();
+  
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  currentUtterance = utterance;
+  
+  const voices = synth.getVoices();
+  const matchedVoice = voices.find(v => v.lang.includes("en-IN")) || 
+                        voices.find(v => v.lang.includes("en-GB")) ||
+                        voices.find(v => v.lang.includes("en-US")) || 
+                        voices[0];
+                        
+  if (matchedVoice) {
+    utterance.voice = matchedVoice;
+  }
+  
+  utterance.onend = () => {
+    if (onEndCallback) onEndCallback();
+  };
+  
+  utterance.onerror = (e) => {
+    console.error("TTS synthesis error:", e);
+    if (onEndCallback) onEndCallback();
+  };
+  
+  synth.speak(utterance);
+}
+
+async function startMicOnce() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    startSpeechRec();
+    return;
+  }
+  
+  // FALLBACK to MediaRecorder
+  if (!navigator.mediaDevices) {
+    alert("Microphone or Speech Recognition not supported in this browser.");
+    return;
+  }
+
+  await ensureLogin();
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    let audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+      audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+      const formData = new FormData();
+      formData.append("file", audioBlob, "recording.wav");
+
+      const typing = document.createElement("div");
+      typing.className = "typing";
+      typing.innerText = "Krishna is listening…";
+      chat.appendChild(typing);
+
+      try {
+        const response = await fetch(API_BASE + "/voice/chat", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + token
+          },
+          body: formData
+        });
+
+        typing.remove();
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          showVoiceError(errData.error || "Voice request failed.");
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (data.text) {
+          addAIMessage(data.text);
+          
+          if (data.audio_url) {
+            const audio = new Audio(data.audio_url);
+            audio.play();
+            audio.onended = () => {
+              if (liveMode) startMicOnce();
+            };
+          } else {
+            speakWisdom(data.text, () => {
+              if (liveMode) startMicOnce();
+            });
+          }
+        }
+      } catch (error) {
+        typing.remove();
+        showVoiceError("Voice connection failed. Check server status.");
+        console.error("Voice error:", error);
+      }
+    };
+
+    mediaRecorder.start();
+
+    setTimeout(() => {
+      if (mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }, 8000);
+  } catch (err) {
+    showVoiceError("Microphone access denied.");
+    console.error(err);
+  }
+}
+</script>
+<script>
+function openChatMenu(e, chatId){
+  e.stopPropagation();
+
+  const confirmDelete = confirm("Delete this chat?");
+  if(confirmDelete){
+    delete chats[chatId];
+
+    if(chatId === currentChat){
+      currentChat = null;
+      chat.innerHTML = "";
+    }
+
+    localStorage.setItem("gitaChats", JSON.stringify(chats));
+    loadChats();
+  }
+}
+function toggleVoiceUI(){
+  liveMode = !liveMode;
+
+  const btn = document.getElementById("voiceToggle");
+  const voiceUI = document.getElementById("voiceUI");
+
+  btn.classList.toggle("active");
+
+  if(liveMode){
+    voiceUI.classList.add("active");
+    startMicOnce();
+  } else {
+    voiceUI.classList.remove("active");
+    stopSpeechRec();
+  }
+
+  console.log("Live mode:", liveMode);
+}
+</script>
+</body>
+</html>

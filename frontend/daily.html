@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GitaAI • Daily Dialogue</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  if (!localStorage.getItem("gitaToken")) {
+    window.location.replace("signin.html");
+  }
+</script>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Segoe UI",system-ui,sans-serif;
+}
+
+:root{
+  --accent:#facc15;
+  --bg:#020617;
+  --panel:#0f172a;
+  --card:rgba(2,6,23,.9);
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+}
+
+body{
+  min-height:100vh;
+  background:linear-gradient(180deg,#020617,#020617 60%,#020617ee);
+  color:var(--text);
+}
+
+/* ===== TOP ===== */
+.topbar{
+  height:60px;
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  background:#020617;
+  border-bottom:1px solid rgba(250,204,21,.25);
+}
+
+.topbar h2{
+  color:var(--accent);
+  font-size:20px;
+}
+
+/* ===== LAYOUT ===== */
+.container{
+  max-width:900px;
+  margin:40px auto;
+  padding:0 20px;
+}
+
+.krishna{
+  text-align:center;
+  font-size:20px;
+  color:var(--accent);
+  margin-bottom:20px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:24px;
+  padding:32px;
+  box-shadow:0 30px 80px rgba(0,0,0,.7);
+}
+
+/* ===== MOODS ===== */
+.moods{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:25px;
+}
+
+.moods button{
+  flex:1;
+  min-width:120px;
+  padding:12px;
+  border:none;
+  border-radius:14px;
+  background:#020617;
+  color:var(--text);
+  cursor:pointer;
+  transition:.3s;
+  border:1px solid rgba(250,204,21,.25);
+}
+
+.moods button:hover{
+  background:rgba(250,204,21,.1);
+}
+
+/* ===== WISDOM ===== */
+.verse{
+  font-size:22px;
+  font-weight:600;
+  line-height:1.6;
+  margin:20px 0;
+}
+
+.ref{
+  color:var(--muted);
+  margin-bottom:16px;
+}
+
+.meaning{
+  font-size:16px;
+  line-height:1.7;
+  color:#e5e7eb;
+}
+
+/* ===== ACTIONS ===== */
+.actions{
+  margin-top:25px;
+  display:flex;
+  gap:14px;
+}
+
+.actions button{
+  padding:12px 18px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#facc15,#f59e0b);
+  color:#020617;
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.actions button.secondary{
+  background:#020617;
+  color:var(--text);
+  border:1px solid rgba(250,204,21,.3);
+}
+
+.actions button:hover{
+  transform:translateY(-2px);
+}
+/* ===== TOP BAR ===== */
+.topbar{
+  height:92px;
+  display:grid;
+  grid-template-columns:64px 1fr 64px;
+  align-items:center;
+  background:rgba(10,6,3,.95);
+  border-bottom:1px solid rgba(250,204,21,.35);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+/* LEFT */
+.top-left{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.om{
+  color:#facc15;
+  font-size:22px;
+}
+
+/* CENTER */
+.top-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.top-center h2{
+  font-family:"Cinzel", serif;
+  color:#facc15;
+  font-size:20px;
+  margin:0;
+  font-weight:600;
+}
+
+/* SUB NAV */
+.subnav{
+  display:flex;
+  gap:18px;
+  font-size:14px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+.subnav a{
+  text-decoration:none;
+  color:#cbd5f5;
+  padding:4px 8px;
+  border-radius:6px;
+  transition:.25s;
+}
+
+.subnav a:hover{
+  color:#facc15;
+  background:rgba(250,204,21,.12);
+}
+
+.subnav a.active{
+  color:#facc15;
+  border-bottom:2px solid #facc15;
+}
+
+/* RIGHT */
+.top-right{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.icon-btn{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:1px solid rgba(250,204,21,.45);
+  background:transparent;
+  color:#facc15;
+  cursor:pointer;
+}
+.practice{
+  margin-top:35px;
+  padding-top:20px;
+  border-top:1px solid rgba(250,204,21,.25);
+}
+
+.practice h3{
+  color:#facc15;
+  margin-bottom:12px;
+}
+
+.practice-card{
+  background:#020617;
+  padding:18px;
+  border-radius:16px;
+  border:1px solid rgba(250,204,21,.25);
+}
+
+.poses{
+  margin:12px 0;
+  line-height:1.7;
+}
+.practice-section{
+  max-width:700px;
+  margin:50px auto;
+}
+
+.section-title{
+  color:#facc15;
+  margin-bottom:18px;
+  font-size:20px;
+}
+
+.practice-card{
+  background:linear-gradient(180deg,#020617,#020617cc);
+  border:1px solid rgba(250,204,21,.3);
+  border-radius:22px;
+  padding:26px;
+  box-shadow:0 25px 60px rgba(0,0,0,.6);
+}
+
+.practice-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.practice-header h4{
+  font-size:22px;
+  color:#e5e7eb;
+}
+
+.tag{
+  font-size:12px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:rgba(250,204,21,.15);
+  color:#facc15;
+}
+
+.desc{
+  color:#cbd5f5;
+  margin-bottom:14px;
+  line-height:1.6;
+}
+
+.steps{
+  margin-left:18px;
+  margin-bottom:20px;
+  line-height:1.8;
+  color:#e5e7eb;
+}
+
+.primary-btn{
+  padding:14px 20px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#facc15,#f59e0b);
+  color:#020617;
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.primary-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 15px 40px rgba(250,204,21,.45);
+}
+.poses-box summary{
+  cursor:pointer;
+  color:#facc15;
+  margin:10px 0;
+  font-weight:500;
+}
+
+.poses{
+  margin-top:12px;
+  line-height:1.8;
+  color:#e5e7eb;
+}
+
+.secondary-btn{
+  margin-top:20px;
+  padding:12px 18px;
+  border-radius:14px;
+  background:#020617;
+  color:#facc15;
+  border:1px solid rgba(250,204,21,.4);
+  cursor:pointer;
+}
+/* ===== BREATHING GUIDE ===== */
+.breathing-box{
+  margin-top:25px;
+  text-align:center;
+}
+
+.hidden{
+  display:none;
+}
+
+#breathCircle{
+  width:120px;
+  height:120px;
+  margin:0 auto 14px;
+  border-radius:50%;
+  background:rgba(250,204,21,.15);
+  border:2px solid #facc15;
+  transition:transform 4s ease-in-out;
+}
+
+#breathText{
+  font-size:18px;
+  color:#facc15;
+}
+/* ===== SURYA NAMASKAR PRACTICE ===== */
+.surya-box{
+  margin-top:25px;
+  text-align:center;
+}
+
+.surya-box img{
+  width:220px;
+  max-width:100%;
+  margin:10px auto;
+  border-radius:14px;
+  border:1px solid rgba(250,204,21,.3);
+}
+
+.surya-box h4{
+  color:#facc15;
+  margin:10px 0 6px;
+}
+
+.surya-box p{
+  color:#cbd5f5;
+  font-size:14px;
+}
+</style>
+</html>
+
+<body>
+
+<div class="topbar">
+  <div class="top-left">
+    <span class="om">ॐ</span>
+  </div>
+
+  <div class="top-center">
+    <h2>Daily Dialogue with Krishna</h2>
+
+    <div class="subnav">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="chat.html">Chat</a>
+      <a href="daily.html" class="active">Daily Wisdom</a>
+      <a href="topics.html">Topics</a>
+      <a href="journey.html">Journey</a>
+    </div>
+  </div>
+
+</div>
+<div class="container">
+
+  <div class="krishna">
+    Krishna says: <span id="greet"></span>
+  </div>
+
+  <div class="card">
+
+    <div class="moods">
+      <button onclick="showWisdom('stressed')">😟 Stressed</button>
+      <button onclick="showWisdom('confused')">🤔 Confused</button>
+      <button onclick="showWisdom('sad')">😔 Sad</button>
+      <button onclick="showWisdom('motivated')">🔥 Motivated</button>
+    </div>
+
+    <div class="verse" id="verse">Choose how you feel today.</div>
+    <div class="ref" id="ref"></div>
+    <div class="meaning" id="meaning"></div>
+
+    <div class="actions">
+      <button onclick="listen()">🔊 Listen</button>
+      <button class="secondary" onclick="clearWisdom()">Reset</button>
+    </div>
+
+  </div>
+</div>
+<section class="practice-section">
+  <h3 class="section-title">🫁 Pranayama for Today</h3>
+
+  <div class="practice-card">
+    <div class="practice-header">
+      <h4>Anulom Vilom</h4>
+      <span class="tag">Calming</span>
+    </div>
+
+    <p class="desc">
+      Alternate nostril breathing to calm the nervous system and improve focus.
+    </p>
+
+    <ul class="steps">
+      <li>Sit comfortably with spine straight</li>
+      <li>Inhale through left nostril (4 sec)</li>
+      <li>Exhale through right nostril (4 sec)</li>
+      <li>Repeat for 5 minutes</li>
+    </ul>
+
+    <button class="primary-btn" onclick="startBreathing()">
+  Start Guided Breathing
+</button>
+  </div>
+  <!-- Breathing Guide -->
+<div id="breathingBox" class="breathing-box hidden">
+  <div id="breathCircle"></div>
+  <p id="breathText">Inhale</p>
+</div>
+</section>
+<section class="practice-section">
+  <h3 class="section-title">🌞 Surya Namaskar</h3>
+
+  <div class="practice-card">
+
+    <p class="desc">
+      A complete sequence of 12 yogic postures that energizes the body and balances the mind.
+    </p>
+
+    <details class="poses-box">
+      <summary>View all 12 poses</summary>
+      <ol class="poses">
+        <li>Pranamasana – Prayer Pose</li>
+        <li>Hastauttanasana – Raised Arms</li>
+        <li>Padahastasana – Forward Bend</li>
+        <li>Ashwa Sanchalanasana – Equestrian</li>
+        <li>Dandasana – Plank</li>
+        <li>Ashtanga Namaskara – Eight Limbs</li>
+        <li>Bhujangasana – Cobra</li>
+        <li>Adho Mukha Svanasana – Downward Dog</li>
+        <li>Ashwa Sanchalanasana</li>
+        <li>Padahastasana</li>
+        <li>Hastauttanasana</li>
+        <li>Pranamasana</li>
+      </ol>
+    </details>
+
+    <button class="secondary-btn" onclick="startSurya()">
+  Start 5-Round Practice
+</button>
+  </div>
+  <!-- Surya Practice Box -->
+<div id="suryaBox" class="surya-box hidden">
+  <img id="poseImg" src="" alt="Surya Pose">
+  <h4 id="poseName"></h4>
+  <p id="poseDesc"></p>
+
+  <button class="primary-btn" onclick="nextPose()">Next Pose</button>
+</div>
+</section>
+<script>
+const data = {
+  stressed:{
+    verse:"You have the right to perform your duty, but not to the fruits of your actions.",
+    ref:"Bhagavad Gita 2.47",
+    meaning:"Let go of outcomes. Peace comes when effort is pure and expectation is released."
+  },
+  confused:{
+    verse:"The mind is restless and difficult to restrain, but it is conquered by practice.",
+    ref:"Bhagavad Gita 6.35",
+    meaning:"Confusion fades when discipline becomes habit and awareness becomes steady."
+  },
+  sad:{
+    verse:"The soul is neither born, nor does it ever die.",
+    ref:"Bhagavad Gita 2.20",
+    meaning:"What you truly are cannot be harmed. This pain is temporary, your essence eternal."
+  },
+  motivated:{
+    verse:"A person is made by their faith. As they believe, so they become.",
+    ref:"Bhagavad Gita 17.3",
+    meaning:"Strong belief aligned with action transforms destiny."
+  }
+};
+
+const verseEl = document.getElementById("verse");
+const refEl = document.getElementById("ref");
+const meaningEl = document.getElementById("meaning");
+const greetEl = document.getElementById("greet");
+
+greetEl.textContent =
+  new Date().getHours() < 18 ? "Rise and act with clarity." : "Release the day, rest the mind.";
+
+function typeText(el, text){
+  el.textContent="";
+  let i=0;
+  const t=setInterval(()=>{
+    el.textContent+=text[i++];
+    if(i===text.length) clearInterval(t);
+  },25);
+}
+
+function showWisdom(mood){
+  const w = data[mood];
+  typeText(verseEl, w.verse);
+  refEl.textContent = "— " + w.ref;
+  typeText(meaningEl, w.meaning);
+}
+
+function clearWisdom(){
+  verseEl.textContent="Choose how you feel today.";
+  refEl.textContent="";
+  meaningEl.textContent="";
+}
+
+function listen(){
+  const text = verseEl.textContent + ". " + meaningEl.textContent;
+  if(!text.trim()) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate=0.85;
+  u.pitch=0.9;
+  speechSynthesis.speak(u);
+}
+
+let breathingInterval;
+let breathingTime = 0;
+const totalTime = 5 * 60; // 5 minutes
+
+function startBreathing(){
+  const box = document.getElementById("breathingBox");
+  const circle = document.getElementById("breathCircle");
+  const text = document.getElementById("breathText");
+
+  box.classList.remove("hidden");
+  breathingTime = 0;
+  let inhale = true;
+
+  circle.style.transform = "scale(1.3)";
+  text.textContent = "Inhale";
+
+  breathingInterval = setInterval(()=>{
+    breathingTime += 4;
+
+    if(inhale){
+      circle.style.transform = "scale(0.8)";
+      text.textContent = "Exhale";
+    } else {
+      circle.style.transform = "scale(1.3)";
+      text.textContent = "Inhale";
+    }
+
+    inhale = !inhale;
+
+    if(breathingTime >= totalTime){
+      clearInterval(breathingInterval);
+      text.textContent = "Practice complete 🕉️";
+      circle.style.transform = "scale(1)";
+    }
+  },4000);
+}
+const suryaPoses = [
+  {
+    name: "Pranamasana (Prayer Pose)",
+    desc: "Stand straight, palms together at the heart center.",
+    img: "./Screenshot 2026-02-27 153536.png"
+  },
+  {
+    name: "Hastauttanasana (Raised Arms)",
+    desc: "Inhale, raise arms overhead and gently bend backward.",
+    img: "./Screenshot 2026-02-27 153545.png"
+  },
+  {
+    name: "Padahastasana (Forward Bend)",
+    desc: "Exhale, bend forward and touch feet or floor.",
+    img: "./Screenshot 2026-02-27 153553.png"
+  },
+  {
+    name: "Ashwa Sanchalanasana (Equestrian)",
+    desc: "Inhale, step right leg back, look up.",
+    img: "./Screenshot 2026-02-27 153604.png"
+  },
+  {
+    name: "Dandasana (Plank)",
+    desc: "Hold the body straight like a plank.",
+    img: "./Screenshot 2026-02-27 153612.png"
+  },
+  {
+    name: "Ashtanga Namaskara",
+    desc: "Lower knees, chest, and chin to the floor.",
+    img: "./Screenshot 2026-02-27 153620.png"
+  },
+  {
+    name: "Bhujangasana (Cobra)",
+    desc: "Inhale, lift chest while keeping elbows bent.",
+    img: "./Screenshot 2026-02-27 153627.png"
+  },
+  {
+    name: "Adho Mukha Svanasana (Downward Dog)",
+    desc: "Lift hips, forming an inverted V shape.",
+    img: "./Screenshot 2026-02-27 153633.png"
+  },
+  {
+    name: "Ashwa Sanchalanasana",
+    desc: "Inhale, step right foot forward.",
+    img: "./Screenshot 2026-02-27 153604.png"
+  },
+  {
+    name: "Padahastasana",
+    desc: "Exhale, bend forward again.",
+    img: "./Screenshot 2026-02-27 153553.png"
+  },
+  {
+    name: "Hastauttanasana",
+    desc: "Inhale, raise arms and bend backward.",
+    img: "./Screenshot 2026-02-27 153545.png"
+  },
+  {
+    name: "Pranamasana",
+    desc: "Exhale, return to prayer pose.",
+    img: "./Screenshot 2026-02-27 153536.png"
+  }
+];
+
+let currentPose = 0;
+
+function startSurya(){
+  document.getElementById("suryaBox").classList.remove("hidden");
+  currentPose = 0;
+  showPose();
+  document.getElementById("poseImg").style.display = "block";
+}
+
+function showPose(){
+  const pose = suryaPoses[currentPose];
+  document.getElementById("poseName").textContent = pose.name;
+  document.getElementById("poseDesc").textContent = pose.desc;
+  document.getElementById("poseImg").src = pose.img;
+}
+
+function nextPose(){
+  currentPose++;
+  if(currentPose >= suryaPoses.length){
+    document.getElementById("poseName").textContent = "Practice Complete 🌞";
+    document.getElementById("poseDesc").textContent =
+      "You have completed one round of Surya Namaskar.";
+    document.getElementById("poseImg").style.display="none";
+    return;
+  }
+  showPose();
+}
+</script>
+
+</body>
+</html>

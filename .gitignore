@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+voice_env/
+ENV/
+env/
+
+# Configuration
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache and Logs
+.pytest_cache/
+.cache/
+.ipynb_checkpoints/
+*.log
+
+# Audio and generated media files
+generated_audio/
+*.wav
+*.mp3
+*.mp4
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# ML Models and weights
+*.safetensors
+*.pt
+*.pth
+*.bin
+**/checkpoint-*/
+

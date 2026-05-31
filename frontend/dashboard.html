@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="GitaAI Dashboard — Your personal life guidance platform powered by the Bhagavad Gita.">
+<title>GitaAI • Life Guidance Dashboard</title>
+
+<!-- Auth guard: single location, runs before anything renders -->
+<script>
+(function guardRoute() {
+  if (!localStorage.getItem("gitaToken")) {
+    window.location.replace("signin.html");
+  }
+})();
+</script>
+
+<style>
+/* ================= RESET ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+/* ================= THEME TOKENS ================= */
+:root {
+  --accent: #facc15;
+  --bg-dark: #020617;
+  --panel: #0f172a;
+  --card: rgba(2, 6, 23, .85);
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+}
+
+/* ================= BACKGROUND ================= */
+body {
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    linear-gradient(rgba(2, 6, 23, .88), rgba(2, 6, 23, .88)),
+    url("./mahabharata-silhouette-symbol-icon-great-hindu-mythology-96933694.webp");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* ================= AMBIENT GLOW ================= */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -40%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(250, 204, 21, .08), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(56, 189, 248, .06), transparent 45%);
+  animation: floatGlow 14s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes floatGlow {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(-4%, 3%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ================= DASHBOARD LAYOUT ================= */
+.dashboard {
+  display: flex;
+  height: 100vh;
+}
+
+/* ================= MAIN ================= */
+.main {
+  flex: 1;
+  padding: 25px;
+  overflow-y: auto;
+}
+
+/* ================= GRID ================= */
+.grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 22px;
+}
+
+/* ================= CARD ================= */
+.card {
+  background: rgba(2, 6, 23, .92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 22px;
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+  border: 1px solid rgba(250, 204, 21, .12);
+  transition: .35s ease;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 35px 90px rgba(250, 204, 21, .15);
+}
+
+.card h3 {
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+/* Day mode card overrides */
+body.day .card {
+  background: rgba(255, 255, 255, .95);
+  border: 1px solid rgba(0, 0, 0, .08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .15);
+  color: #020617;
+}
+
+body.day .card h3 {
+  color: #b45309;
+}
+
+/* ================= HERO ================= */
+.hero {
+  background: linear-gradient(135deg, rgba(250, 204, 21, .08), rgba(2, 6, 23, .9));
+  border: 1px solid rgba(250, 204, 21, .25);
+  padding: 24px;
+  border-radius: 22px;
+  margin-bottom: 25px;
+  transition: .35s ease;
+}
+
+.hero:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 35px 90px rgba(250, 204, 21, .15);
+}
+
+.hero h2 { color: var(--accent); margin-bottom: 10px; }
+.hero p  { font-size: 16px; line-height: 1.6; color: #e5e7eb; }
+
+/* ================= GITA BOOK ================= */
+.gita-book {
+  max-width: 1100px;
+  height: 520px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: linear-gradient(90deg, #ead7a5 0%, #f7edd2 50%, #ead7a5 100%);
+  border-radius: 18px;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, .65), inset 0 0 60px rgba(120, 80, 20, .25);
+  position: relative;
+  overflow: hidden;
+}
+
+.book-spine {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(to right, rgba(90,60,20,.8), rgba(160,120,50,.6), rgba(90,60,20,.8));
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.page {
+  padding: 48px 46px;
+  color: #3b2f12;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background:
+    radial-gradient(circle at top left, rgba(255,255,255,.35), transparent 60%),
+    radial-gradient(circle at bottom right, rgba(0,0,0,.08), transparent 65%);
+}
+
+.page.left  { box-shadow: inset -25px 0 35px rgba(0,0,0,.15); }
+.page.right {
+  box-shadow: inset 25px 0 35px rgba(0,0,0,.15);
+  transform-origin: left center;
+  transition: transform 0.9s ease, box-shadow 0.9s ease;
+}
+
+.gita-book.flip .page.right {
+  transform: rotateY(-160deg);
+  box-shadow: -60px 0 80px rgba(0,0,0,.4);
+}
+
+.page-header {
+  font-family: "Cinzel", serif;
+  text-align: center;
+  font-size: 22px;
+  color: #8b5a18;
+  margin-bottom: 28px;
+}
+
+.page-header span { display: block; font-size: 13px; opacity: .7; margin-top: 4px; }
+
+.sanskrit {
+  font-size: 26px;
+  line-height: 1.9;
+  text-align: center;
+  letter-spacing: .5px;
+}
+
+.meaning {
+  font-size: 19px;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+/* Language buttons */
+.lang-row { display: flex; gap: 12px; margin-bottom: 26px; }
+
+.lang-btn {
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(120,90,30,.45);
+  background: transparent;
+  cursor: pointer;
+  color: #5c4214;
+  transition: .3s;
+}
+
+.lang-btn:hover,
+.lang-btn.active {
+  background: #b45309;
+  color: #fff;
+}
+
+/* Verse navigation */
+.verse-nav { display: flex; gap: 14px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
+
+.next-verse-btn {
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(120,90,30,.45);
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #3b2f12;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .3s;
+}
+
+.next-verse-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(250,204,21,.6);
+}
+
+/* ================= TOPICS BUTTONS ================= */
+.topics button {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, .9);
+  color: #e5e7eb;
+  border: 1px solid rgba(250, 204, 21, .25);
+  font-weight: 500;
+  cursor: pointer;
+  transition: .25s ease;
+}
+
+.topics button:hover {
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #020617;
+  transform: translateY(-2px);
+}
+
+body.day .topics button {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #d4b06a;
+  font-weight: 500;
+}
+
+body.day .topics button:hover {
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #020617;
+}
+
+.talk-btn {
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #3b2f12;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(250, 204, 21, .45);
+}
+
+.talk-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 45px rgba(250, 204, 21, .6);
+}
+
+/* ================= KNOW YOURSELF ================= */
+.know-yourself {
+  background: linear-gradient(135deg, rgba(2,6,23,.95), rgba(15,23,42,.95));
+  border: 1px solid rgba(250, 204, 21, .25);
+  padding: 20px;
+  border-radius: 22px;
+  box-shadow: 0 30px 70px rgba(0,0,0,.65);
+  transition: .35s ease;
+}
+
+.know-yourself:hover { transform: translateY(-6px); box-shadow: 0 35px 90px rgba(250,204,21,.15); }
+.know-yourself h3    { color: var(--accent); margin-bottom: 10px; }
+.know-yourself p     { font-size: 15px; color: #cbd5f5; margin-bottom: 14px; line-height: 1.6; }
+
+.know-yourself button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1e293b, #020617);
+  color: white;
+  cursor: pointer;
+  transition: .3s;
+}
+
+.know-yourself button:hover {
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #020617;
+  transform: translateY(-2px);
+}
+
+body.day .know-yourself p      { color: #475569; }
+body.day .know-yourself button  { background: #020617; color: white; }
+
+/* ================= INNER DASHBOARD ================= */
+.inner-dashboard h3 { color: var(--accent); margin-bottom: 18px; }
+
+.state-row { margin-bottom: 22px; }
+
+.state-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.level {
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.level.low      { background: #22c55e22; color: #22c55e; }
+.level.moderate { background: #facc1522; color: #facc15; }
+.level.high     { background: #ef444422; color: #ef4444; }
+
+.bar-track { background: #1e293b; height: 10px; border-radius: 999px; overflow: hidden; }
+
+.bar-fill { height: 100%; border-radius: 999px; }
+.bar-fill.low      { background: #22c55e; }
+.bar-fill.moderate { background: #facc15; }
+.bar-fill.high     { background: #ef4444; }
+
+.guidance { font-size: 14px; color: #cbd5f5; margin-top: 8px; line-height: 1.5; }
+
+body.day .inner-dashboard span,
+body.day .inner-dashboard p { color: #1e293b; }
+
+/* ================= AI ADVICE CARD ================= */
+.ai-advice-card {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(250, 204, 21, .07);
+  border: 1px solid rgba(250, 204, 21, .2);
+}
+
+.ai-advice-card p {
+  font-size: 14px;
+  color: #e5e7eb;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ai-advice-card .trend-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, .15);
+  color: #22c55e;
+  margin-top: 8px;
+}
+
+/* ================= ABHYASA TRACKER ================= */
+.abhyasa-tracker {
+  background: linear-gradient(135deg, rgba(2,6,23,.95), rgba(15,23,42,.95));
+  border: 1px solid rgba(250, 204, 21, .25);
+}
+
+.abhyasa-sub { font-size: 14px; color: #cbd5f5; margin-bottom: 16px; }
+
+.abhyasa-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.abhyasa-stats div { text-align: center; flex: 1; }
+.abhyasa-stats span  { display: block; font-size: 12px; color: #94a3b8; }
+.abhyasa-stats strong { font-size: 16px; color: var(--accent); }
+
+.abhyasa-actions { display: flex; gap: 10px; }
+
+.abhyasa-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1e293b, #020617);
+  color: white;
+  cursor: pointer;
+  transition: .3s;
+}
+
+.abhyasa-actions button:hover {
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #020617;
+  transform: translateY(-2px);
+}
+
+body.day .abhyasa-tracker { background: rgba(255, 255, 255, .95); }
+body.day .abhyasa-sub     { color: #475569; }
+
+/* ================= MEDITATION GRAPH ================= */
+.med-graph {
+  position: relative;
+  margin: 0 auto 10px;
+  width: 160px;
+}
+
+.med-graph svg { width: 100%; }
+
+.med-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.med-center span  { font-size: 22px; font-weight: 700; color: var(--accent); }
+.med-center small { font-size: 12px; color: #94a3b8; }
+
+/* ================= CHAT ================= */
+.chat-container { position: relative; height: 360px; }
+
+.chat {
+  height: 100%;
+  padding-bottom: 90px;
+  background:
+    linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)),
+    url("./wp6293250.jpg");
+  background-size: cover;
+  background-position: center;
+  border-radius: 18px;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+/* Single definition of .msg */
+.msg {
+  max-width: 75%;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  line-height: 1.5;
+  font-size: 15px;
+  position: relative;
+}
+
+.msg.user {
+  margin-left: auto;
+  background: #1e293b;
+  color: #38bdf8;
+  border-bottom-right-radius: 6px;
+}
+
+.msg.ai {
+  margin-right: auto;
+  background: linear-gradient(135deg, #f5e7c1, #e8d29a);
+  color: #3b2f12;
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 8px 25px rgba(250, 204, 21, .35);
+}
+
+.msg.ai::before {
+  content: "";
+  position: absolute;
+  left: -44px;
+  bottom: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: url("./images/image.png");
+  background-size: cover;
+  background-position: center;
+  border: 2px solid #facc15;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  position: sticky;
+  bottom: 0;
+  background: rgba(2, 6, 23, .95);
+  padding: 12px;
+  border-radius: 16px;
+  border-top: 1px solid rgba(250, 204, 21, .25);
+}
+
+.input-row.floating {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(2, 6, 23, .95);
+  padding: 12px;
+  border-top: 1px solid rgba(250, 204, 21, .2);
+}
+
+.input-row textarea {
+  flex: 1;
+  height: 48px;
+  resize: none;
+  border-radius: 14px;
+  border: none;
+  background: #0f172a;
+  color: white;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.input-row button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #facc15;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* ================= MIC BUTTON ================= */
+.mic-btn {
+  width: 52px;
+  border-radius: 50%;
+  border: none;
+  background: #1e293b;
+  color: #facc15;
+  font-size: 20px;
+  cursor: pointer;
+  transition: .25s;
+}
+
+.mic-btn:hover { background: #334155; }
+
+.mic-btn.listening {
+  background: #facc15;
+  color: #020617;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(250,204,21,.5); }
+  70%  { box-shadow: 0 0 0 14px rgba(250,204,21,0); }
+  100% { box-shadow: 0 0 0 0 rgba(250,204,21,0); }
+}
+
+/* ================= TYPING INDICATOR ================= */
+.typing { display: flex; gap: 6px; padding: 12px; }
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  background: #facc15;
+  border-radius: 50%;
+  animation: blink 1.4s infinite both;
+}
+
+.typing span:nth-child(2) { animation-delay: .2s; }
+.typing span:nth-child(3) { animation-delay: .4s; }
+
+@keyframes blink {
+  0%   { opacity: .2; }
+  20%  { opacity: 1; }
+  100% { opacity: .2; }
+}
+
+/* ================= INTRO VIDEO ================= */
+#intro {
+  position: fixed;
+  inset: 0;
+  background: black;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#intro video { width: 100%; height: 100%; object-fit: cover; }
+
+.skip-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0,0,0,.6);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* ================= DRAWER ================= */
+.drawer-btn {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  background: #1e293b;
+  color: #facc15;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 3000;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none;
+  z-index: 2500;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: #0f172a;
+  color: #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  transition: .35s ease;
+  z-index: 3000;
+}
+
+.drawer-header {
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.drawer-header button { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; }
+
+.drawer-menu { padding: 10px; flex: 1; }
+
+.drawer-menu div {
+  padding: 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: .2s;
+}
+
+.drawer-menu div:hover { background: #1e293b; color: #facc15; }
+
+.drawer-footer { padding: 14px; border-top: 1px solid #1e293b; }
+
+.clear-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #cbd5f5;
+  cursor: pointer;
+}
+
+/* ================= THEME TOGGLE ================= */
+.theme-btn {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: #1e293b;
+  color: #facc15;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 3000;
+}
+
+/* ================= DAY MODE ================= */
+body.day {
+  background:
+    linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)),
+    url("./wp6293250.jpg");
+  color: #020617;
+}
+
+body.day .card,
+body.day .hero,
+body.day .know-yourself { background: rgba(255,255,255,.75); color: #020617; }
+
+body.day .msg.ai { background: #fef3c7; color: #92400e; }
+
+/* ================= KRISHNA AVATAR ================= */
+#krishna-avatar {
+  position: fixed;
+  right: 40px;
+  bottom: 140px;
+  width: 220px;
+  opacity: 0;
+  transform: translateY(20px) scale(.95);
+  transition: .6s ease;
+  pointer-events: none;
+  z-index: 2000;
+}
+
+#krishna-avatar img { width: 100%; filter: drop-shadow(0 30px 80px rgba(250,204,21,.45)); }
+#krishna-avatar.active { opacity: 1; transform: translateY(0) scale(1); }
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .gita-book { grid-template-columns: 1fr; height: auto; }
+  .book-spine { display: none; }
+  .page.left { box-shadow: none; border-bottom: 1px solid rgba(120,90,30,.3); }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== INTRO VIDEO ===== -->
+<div id="intro">
+  <video autoplay muted playsinline id="introVideo">
+    <source src="20260223_2237_New Video_simple_compose_01kj5qgt0nfj19662nxtea1gsv.mp4" type="video/mp4">
+  </video>
+  <button class="skip-btn" id="skipBtn">Skip</button>
+</div>
+
+<!-- ===== FIXED CONTROLS ===== -->
+<button class="theme-btn" id="themeBtn" aria-label="Toggle theme">🌙</button>
+<button class="drawer-btn" id="drawerOpenBtn" aria-label="Open menu">☰</button>
+
+<!-- ===== DRAWER OVERLAY ===== -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+<!-- ===== DRAWER ===== -->
+<div class="drawer" id="drawer" role="navigation" aria-label="Main navigation">
+  <div class="drawer-header">
+    <span>GitaAI</span>
+    <button id="drawerCloseBtn" aria-label="Close menu">✕</button>
+  </div>
+
+  <div class="drawer-menu">
+    <div onclick="location.href='dashboard.html'">🏠 Home</div>
+    <div onclick="location.href='chat.html'">💬 Chat</div>
+    <div onclick="location.href='daily.html'">📜 Daily Wisdom</div>
+    <div onclick="location.href='topics.html'">📚 Topics</div>
+    <div onclick="location.href='journey.html'">🧭 My Journey</div>
+    <div onclick="location.href='contact.html'">📩 Contact Us</div>
+  </div>
+
+  <div class="drawer-footer">
+    <button class="clear-btn" id="logoutBtn">Logout</button>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD WRAPPER ===== -->
+<div class="dashboard">
+  <div class="main">
+
+    <div class="grid">
+
+      <!-- ===== LEFT COLUMN ===== -->
+      <div>
+
+        <!-- GITA BOOK -->
+        <div class="gita-book" id="gitaBook">
+          <div class="book-spine"></div>
+
+          <!-- Left Page: Sanskrit -->
+          <div class="page left">
+            <div class="page-header">
+              Bhagavad Gita<br>
+              <span id="verseRef">Chapter 2 • Verse 47</span>
+            </div>
+            <div class="sanskrit" id="versesSanskrit">
+              कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।<br>
+              मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥
+            </div>
+          </div>
+
+          <!-- Right Page: Translation -->
+          <div class="page right">
+            <div class="meaning" id="meaning">
+              You have the right to perform your duty,
+              but not to be attached to the results of your actions.
+              Peace lies in detached action.
+            </div>
+
+            <!-- Language selector — data-lang attributes fixed -->
+            <div class="lang-row">
+              <button class="lang-btn active" data-lang="en" onclick="setLang('en')">English</button>
+              <button class="lang-btn" data-lang="hi" onclick="setLang('hi')">Hindi</button>
+              <button class="lang-btn" data-lang="ta" onclick="setLang('ta')">Tamil</button>
+            </div>
+
+            <!-- Verse Navigation -->
+            <div class="verse-nav">
+              <button class="next-verse-btn" id="prevVerseBtn">← Previous Verse</button>
+              <button class="next-verse-btn" id="nextVerseBtn">Next Verse →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABHYASA TRACKER -->
+        <div class="card abhyasa-tracker" style="margin-top:22px">
+          <h3>🧘 Abhyāsa Tracker</h3>
+          <p class="abhyasa-sub">Daily disciplined practice (Abhyāsa) without attachment to results.</p>
+
+          <div class="abhyasa-stats">
+            <div>
+              <span>Meditation Today</span>
+              <strong id="medTime">0 min</strong>
+            </div>
+
+            <!-- SVG Arc Graph -->
+            <div class="med-graph">
+              <svg viewBox="0 0 200 110">
+                <path d="M20 100 A80 80 0 0 1 180 100"
+                  fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round"/>
+                <path id="medArc"
+                  d="M20 100 A80 80 0 0 1 180 100"
+                  fill="none" stroke="#facc15" stroke-width="14"
+                  stroke-linecap="round" stroke-dasharray="0 251"/>
+              </svg>
+              <div class="med-center">
+                <span id="medPercent">0%</span>
+                <small>Today's Goal</small>
+              </div>
+            </div>
+
+            <div>
+              <span>Streak</span>
+              <strong id="streak">0 days 🔥</strong>
+            </div>
+          </div>
+
+          <div class="abhyasa-actions">
+            <button id="meditateBtn">🧘 Meditate 5 min</button>
+          </div>
+        </div>
+
+      </div><!-- /LEFT COLUMN -->
+
+      <!-- ===== RIGHT COLUMN ===== -->
+      <div>
+
+        <!-- Daily Wisdom -->
+        <div class="card" style="margin-bottom:20px">
+          <h3>Daily Wisdom</h3>
+          <p>You have the right to action, not to its fruits.</p>
+        </div>
+
+        <!-- Topical Guidance -->
+        <div class="card topics" style="margin-bottom:20px">
+          <h3>Topical Guidance</h3>
+          <button id="btnStress">Stress &amp; Anxiety</button>
+          <button id="btnDecision">Decision Making</button>
+          <button id="btnRelationships">Relationships</button>
+          <button class="talk-btn" id="btnGeneral">🕉️ Talk with Krishna</button>
+        </div>
+
+        <!-- Know Yourself -->
+        <div class="card know-yourself" style="margin-bottom:20px">
+          <h3>🧠 Know Yourself</h3>
+          <p>Understand your current mental state before seeking guidance.</p>
+          <button id="testBtn">Take the Self-Understanding Test</button>
+        </div>
+
+        <!-- Inner State Dashboard -->
+        <div class="card inner-dashboard">
+          <h3>🧘 Inner State Dashboard</h3>
+
+          <!-- Stress & Anxiety row -->
+          <div class="state-row">
+            <div class="state-header">
+              <span>Stress &amp; Anxiety</span>
+              <span class="level moderate" id="lowText">Moderate</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill moderate" id="lowBar" style="width:60%"></div>
+            </div>
+            <p class="guidance" id="lowAdvice">Reduce attachment to outcomes. Focus on disciplined effort.</p>
+          </div>
+
+          <!-- Decision Making row -->
+          <div class="state-row">
+            <div class="state-header">
+              <span>Decision Making</span>
+              <span class="level low" id="decisionText">Low</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill low" id="decisionBar" style="width:30%"></div>
+            </div>
+            <p class="guidance" id="decisionAdvice">Trust your judgment. Act without fear of failure.</p>
+          </div>
+
+          <!-- Relationships row -->
+          <div class="state-row">
+            <div class="state-header">
+              <span>Relationships</span>
+              <span class="level high" id="relText">High</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill high" id="relBar" style="width:85%"></div>
+            </div>
+            <p class="guidance" id="relAdvice">Detach from expectations. Act with compassion, not dependency.</p>
+          </div>
+
+          <!-- AI Advice block — formerly missing DOM elements, now present -->
+          <div class="ai-advice-card">
+            <p id="aiAdvice">Take the Self-Understanding Test to view personalized guidance.</p>
+            <span class="trend-badge" id="improve">Stable</span>
+          </div>
+
+          <!-- Latest stress level label — formerly missing DOM element, now present -->
+          <p style="font-size:13px; color:var(--muted); margin-top:10px;" id="levelText">
+            No stress assessment taken yet.
+          </p>
+        </div>
+
+      </div><!-- /RIGHT COLUMN -->
+
+    </div><!-- /grid -->
+  </div><!-- /main -->
+</div><!-- /dashboard -->
+
+<!-- ============================================================
+     CONSOLIDATED JAVASCRIPT — single script block, no duplicates
+     ============================================================ -->
+<script>
+"use strict";
+
+/* ===== CONSTANTS ===== */
+const API_BASE = window.location.origin;
+const DAILY_GOAL = 20; // meditation minutes goal
+
+/* ===== AUTH HELPERS ===== */
+function getToken() {
+  return localStorage.getItem("gitaToken");
+}
+
+function logout() {
+  localStorage.removeItem("gitaToken");
+  localStorage.removeItem("gitaUser");
+  window.location.replace("signin.html");
+}
+
+/* ===== THEME ===== */
+function toggleTheme() {
+  document.body.classList.toggle("day");
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = document.body.classList.contains("day") ? "☀️" : "🌙";
+}
+
+/* ===== INTRO VIDEO ===== */
+const introEl = document.getElementById("intro");
+const videoEl = document.getElementById("introVideo");
+
+if (videoEl) {
+  videoEl.onended = function () {
+    introEl.style.opacity = "0";
+    introEl.style.transition = "opacity 0.8s ease";
+    setTimeout(function () { introEl.style.display = "none"; }, 800);
+  };
+}
+
+document.getElementById("skipBtn").addEventListener("click", function () {
+  if (introEl) introEl.style.display = "none";
+});
+
+/* ===== DRAWER ===== */
+function openDrawer() {
+  document.getElementById("drawer").style.left = "0";
+  document.getElementById("drawerOverlay").style.display = "block";
+}
+
+function closeDrawer() {
+  document.getElementById("drawer").style.left = "-280px";
+  document.getElementById("drawerOverlay").style.display = "none";
+}
+
+document.getElementById("drawerOpenBtn").addEventListener("click", openDrawer);
+document.getElementById("drawerCloseBtn").addEventListener("click", closeDrawer);
+document.getElementById("drawerOverlay").addEventListener("click", closeDrawer);
+document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+document.getElementById("logoutBtn").addEventListener("click", logout);
+
+/* ===== BOOK LANGUAGE ===== */
+const VERSE_TRANSLATIONS = {
+  en: [
+    "You have the right to perform your duty, but not to the results of your actions.",
+    "Lift yourself by yourself; do not degrade yourself."
+  ],
+  hi: [
+    "तुम्हारा अधिकार केवल कर्म करने में है, फल में नहीं।",
+    "अपने आप को स्वयं ऊपर उठाओ, स्वयं को गिराओ मत।"
+  ],
+  ta: [
+    "நீ செயலில் உரிமை உடையவன்; அதன் பலனில் அல்ல.",
+    "தன்னைத் தானே உயர்த்திக் கொள்ள வேண்டும்."
+  ]
+};
+
+let currentLang   = "en";
+let verseIndex    = 0;
+
+const VERSES = [
+  {
+    ref: "Chapter 2 • Verse 47",
+    sanskrit: "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।\nमा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥"
+  },
+  {
+    ref: "Chapter 6 • Verse 5",
+    sanskrit: "उद्धरेदात्मनाऽत्मानं नात्मानमवसादयेत्।"
+  }
+];
+
+function renderVerse() {
+  const v = VERSES[verseIndex];
+  const refEl      = document.getElementById("verseRef");
+  const sanskritEl = document.getElementById("versesSanskrit");
+  const meaningEl  = document.getElementById("meaning");
+
+  if (refEl)      refEl.textContent      = v.ref;
+  if (sanskritEl) sanskritEl.textContent = v.sanskrit;
+  if (meaningEl)  meaningEl.textContent  = VERSE_TRANSLATIONS[currentLang][verseIndex] || "";
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  renderVerse();
+
+  document.querySelectorAll(".lang-btn").forEach(function (b) {
+    b.classList.toggle("active", b.dataset.lang === lang);
+  });
+}
+
+function flipBook(callback) {
+  const book = document.getElementById("gitaBook");
+  if (!book) return;
+  book.classList.add("flip");
+  setTimeout(function () {
+    callback();
+    book.classList.remove("flip");
+  }, 900);
+}
+
+function nextVerse() {
+  flipBook(function () {
+    verseIndex = (verseIndex + 1) % VERSES.length;
+    renderVerse();
+  });
+}
+
+function prevVerse() {
+  flipBook(function () {
+    verseIndex = (verseIndex - 1 + VERSES.length) % VERSES.length;
+    renderVerse();
+  });
+}
+
+document.getElementById("prevVerseBtn").addEventListener("click", prevVerse);
+document.getElementById("nextVerseBtn").addEventListener("click", nextVerse);
+
+/* ===== NAVIGATION ===== */
+function goChat(topic) {
+  localStorage.setItem("gitaTopic", topic);
+  window.location.href = "chat.html";
+}
+
+document.getElementById("btnStress").addEventListener("click", function ()        { goChat("Stress & Anxiety"); });
+document.getElementById("btnDecision").addEventListener("click", function ()      { goChat("Decision Making"); });
+document.getElementById("btnRelationships").addEventListener("click", function () { goChat("Relationships"); });
+document.getElementById("btnGeneral").addEventListener("click", function ()       { goChat("General"); });
+
+document.getElementById("testBtn").addEventListener("click", function () {
+  window.location.href = "text.html";
+});
+
+/* ===== GUIDANCE CONTENT ===== */
+function getGuidance(type, level) {
+  const map = {
+    stress: {
+      Low:      "Remain steady. Act without attachment.",
+      Moderate: "Slow down. Detach from outcomes.",
+      High:     "Pause. Still the mind. Seek inner silence."
+    },
+    decision: {
+      Low:      "Your clarity is strong. Trust dharma.",
+      Moderate: "Reduce fear. Decide with duty, not doubt.",
+      High:     "Silence the noise. Right action will emerge."
+    },
+    relationships: {
+      Low:      "Maintain compassion with boundaries.",
+      Moderate: "Detach expectations. Speak truth gently.",
+      High:     "Release attachment. Love without fear."
+    }
+  };
+  return (map[type] && map[type][level]) ? map[type][level] : "";
+}
+
+/* ===== WELLNESS HISTORY (from backend API) ===== */
+async function syncWellnessHistory() {
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    const res = await fetch(API_BASE + "/wellness/history", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      console.error("Wellness API error:", res.status);
+      return;
+    }
+
+    const history = await res.json();
+
+    const stressList       = history.filter(function (h) { return h.test_type === "stress"; });
+    const decisionList     = history.filter(function (h) { return h.test_type === "decision"; });
+    const relationshipList = history.filter(function (h) { return h.test_type === "relationships"; });
+
+    // --- Update AI Advice block (levelText, aiAdvice, improve) ---
+    const levelTextEl = document.getElementById("levelText");
+    const aiAdviceEl  = document.getElementById("aiAdvice");
+    const improveEl   = document.getElementById("improve");
+
+    if (stressList.length > 0) {
+      const latest  = stressList[0];
+      const level   = latest.level;
+      const dateStr = new Date(latest.taken_at).toLocaleDateString();
+
+      if (levelTextEl) levelTextEl.textContent = "Latest stress level: " + level + " (Checked: " + dateStr + ")";
+      if (aiAdviceEl)  aiAdviceEl.textContent  = getGuidance("stress", level);
+
+      if (improveEl) {
+        if (stressList.length > 1) {
+          const prev = stressList[1].level;
+          improveEl.textContent = (prev === level) ? "Stable" : "Improving";
+        } else {
+          improveEl.textContent = "Stable";
+        }
+      }
+    } else {
+      if (levelTextEl) levelTextEl.textContent = "No stress assessment taken yet.";
+      if (aiAdviceEl)  aiAdviceEl.textContent  = "Take the Self-Understanding Test to view personalized guidance.";
+      if (improveEl)   improveEl.textContent   = "Stable";
+    }
+
+    // --- Inner Dashboard rows ---
+    populateDashboardRow("stress",         "low",      stressList);
+    populateDashboardRow("decision",       "decision", decisionList);
+    populateDashboardRow("relationships",  "rel",      relationshipList);
+
+  } catch (err) {
+    console.error("Error syncing wellness history:", err);
+  }
+}
+
+function populateDashboardRow(type, prefix, list) {
+  if (!list || list.length === 0) return;
+
+  const latest  = list[0];
+  const level   = latest.level;
+  const widthMap = { Low: "30%", Moderate: "60%", High: "90%" };
+
+  const textEl   = document.getElementById(prefix + "Text");
+  const barEl    = document.getElementById(prefix + "Bar");
+  const adviceEl = document.getElementById(prefix + "Advice");
+
+  if (textEl) {
+    textEl.className   = "level " + level.toLowerCase();
+    textEl.textContent = level;
+  }
+
+  if (barEl) {
+    barEl.className    = "bar-fill " + level.toLowerCase();
+    barEl.style.width  = widthMap[level] || "50%";
+  }
+
+  if (adviceEl) {
+    adviceEl.textContent = getGuidance(type, level);
+  }
+}
+
+/* ===== ABHYASA (from backend API) ===== */
+async function loadAbhyasa() {
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    const res = await fetch(API_BASE + "/abhyasa/stats", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    if (!res.ok) {
+      console.error("Abhyasa API error:", res.status);
+      return;
+    }
+
+    const stats = await res.json();
+
+    const medTimeEl    = document.getElementById("medTime");
+    const streakEl     = document.getElementById("streak");
+    const medPercentEl = document.getElementById("medPercent");
+    const medArcEl     = document.getElementById("medArc");
+
+    if (medTimeEl)    medTimeEl.textContent = stats.meditation + " min";
+    if (streakEl)     streakEl.textContent  = stats.streak + " days 🔥";
+
+    const percent   = Math.min(Math.round((stats.meditation / DAILY_GOAL) * 100), 100);
+    const arcLength = 251;
+    const filled    = (percent / 100) * arcLength;
+
+    if (medPercentEl) medPercentEl.textContent = percent + "%";
+    if (medArcEl)     medArcEl.setAttribute("stroke-dasharray", filled + " " + (arcLength - filled));
+
+  } catch (err) {
+    console.error("Error loading abhyasa stats:", err);
+  }
+}
+
+async function addMeditation(min) {
+  const token = getToken();
+  if (!token) return;
+
+  const btn = document.getElementById("meditateBtn");
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch(API_BASE + "/abhyasa/log", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({ minutes: min })
+    });
+
+    if (!res.ok) {
+      console.error("Log meditation API error:", res.status);
+      return;
+    }
+
+    await loadAbhyasa();
+
+  } catch (err) {
+    console.error("Error adding meditation:", err);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+document.getElementById("meditateBtn").addEventListener("click", function () {
+  addMeditation(5);
+});
+
+/* ===== BACK-NAVIGATION LOCK (prevents back-to-dashboard after logout) ===== */
+history.pushState(null, null, location.href);
+window.addEventListener("popstate", function () {
+  history.go(1);
+});
+
+/* ===== INIT ===== */
+document.addEventListener("DOMContentLoaded", function () {
+  syncWellnessHistory();
+  loadAbhyasa();
+});
+</script>
+
+</body>
+</html>

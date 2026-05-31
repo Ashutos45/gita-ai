@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GitaAI • Self Assessment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  if (!localStorage.getItem("gitaToken")) {
+    window.location.replace("signin.html");
+  }
+</script>
+
+<style>
+body{
+  font-family: system-ui, sans-serif;
+  background:#020617;
+  color:#e5e7eb;
+  display:flex;
+  justify-content:center;
+  min-height:100vh;
+  padding:30px;
+}
+
+.container{
+  max-width:720px;
+  width:100%;
+  background:#0f172a;
+  border-radius:18px;
+  padding:28px;
+  box-shadow:0 30px 80px rgba(0,0,0,.7);
+}
+
+h1,h2{
+  color:#facc15;
+  text-align:center;
+  margin-bottom:18px;
+}
+
+.topic-btn{
+  width:100%;
+  padding:14px;
+  margin-bottom:12px;
+  border-radius:12px;
+  border:none;
+  background:#1e293b;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
+
+.topic-btn:hover{
+  background:#facc15;
+  color:#020617;
+}
+
+.question{
+  margin-bottom:22px;
+}
+
+.question h3{
+  font-size:16px;
+  margin-bottom:10px;
+}
+
+.options label{
+  display:block;
+  padding:10px;
+  border-radius:10px;
+  background:#1e293b;
+  margin-bottom:8px;
+  cursor:pointer;
+}
+
+.submit-btn{
+  width:100%;
+  padding:14px;
+  margin-top:24px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#facc15,#f59e0b);
+  color:#020617;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.result{
+  text-align:center;
+  margin-top:30px;
+}
+
+.level{
+  font-size:22px;
+  margin-top:10px;
+}
+
+.progress-wrap{
+  margin-bottom:20px;
+}
+
+.progress-bar{
+  background:#1e293b;
+  border-radius:10px;
+  height:10px;
+  overflow:hidden;
+}
+
+.progress{
+  height:100%;
+  width:0%;
+  background:#facc15;
+  transition:.3s;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🧘 Self Assessment</h1>
+
+  <div class="progress-wrap">
+    <div style="font-size:14px;color:#94a3b8">Progress</div>
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+  </div>
+
+  <!-- TOPIC SELECTION -->
+  <div id="topics">
+    <button class="topic-btn" onclick="startTest('stress')">Stress & Anxiety</button>
+    <button class="topic-btn" onclick="startTest('decision')">Decision Making</button>
+    <button class="topic-btn" onclick="startTest('relationships')">Relationships</button>
+  </div>
+
+  <!-- QUESTIONS AREA -->
+  <div id="app"></div>
+
+</div>
+
+<script>
+const tests = {
+  stress: [
+    "I feel overwhelmed by daily responsibilities",
+    "I struggle to relax even during free time",
+    "My mind keeps racing with worries",
+    "I feel anxious about future outcomes",
+    "I feel mentally exhausted often",
+    "I overthink small problems",
+    "I feel pressure without clear reasons",
+    "I worry excessively about outcomes",
+    "I find it hard to stay calm",
+    "I feel emotionally drained"
+  ],
+  decision: [
+    "I doubt my decisions after making them",
+    "I delay decisions due to fear of mistakes",
+    "I rely heavily on others to decide for me",
+    "I feel confused when choices are complex",
+    "I regret decisions frequently",
+    "I avoid important decisions",
+    "I fear making wrong choices",
+    "I overanalyze every option",
+    "I lack confidence in my judgment",
+    "I feel stressed while deciding"
+  ],
+  relationships: [
+    "I fear being misunderstood",
+    "I get emotionally hurt easily",
+    "I struggle to express feelings clearly",
+    "I overthink others' actions",
+    "I feel insecure in relationships",
+    "I avoid conflicts even when needed",
+    "I depend emotionally on others",
+    "I fear rejection",
+    "I feel unappreciated often",
+    "I struggle to maintain boundaries"
+  ]
+};
+
+const options = [
+  { text:"Never", value:0 },
+  { text:"Sometimes", value:1 },
+  { text:"Often", value:2 },
+  { text:"Almost Always", value:3 }
+];
+
+let currentType="";
+let answered=new Set();
+
+function startTest(type){
+    console.log(currentType);
+  currentType=type;
+  answered.clear();
+  document.getElementById("progress").style.width="0%";
+
+  const app=document.getElementById("app");
+  app.innerHTML=`<h2>${type.toUpperCase()} TEST</h2>`;
+
+  tests[type].forEach((q,i)=>{
+  app.insertAdjacentHTML("beforeend", `
+    <div class="question">
+      <h3>${i+1}. ${q}</h3>
+      <div class="options">
+        ${options.map(o=>`
+          <label>
+            <input type="radio" name="q${i}" value="${o.value}"
+              onclick="updateProgress(${i})"> ${o.text}
+          </label>`).join("")}
+      </div>
+    </div>`);
+});
+
+  app.innerHTML+=`
+    <button class="submit-btn" onclick="submitTest()">Submit Test</button>`;
+}
+
+function updateProgress(i){
+  answered.add(i);
+  document.getElementById("progress").style.width =
+    (answered.size/tests[currentType].length)*100+"%";
+}
+
+async function submitTest(){
+  let score=0;
+
+  tests[currentType].forEach((_,i)=>{
+    const ans=document.querySelector(`input[name="q${i}"]:checked`);
+    if(ans) score+=+ans.value;
+  });
+
+  let level="Low";
+  if(score>=15 && score<25) level="Moderate";
+  if(score>=25) level="High";
+
+  // Sync with Backend Database
+  const token = localStorage.getItem("gitaToken");
+  const API_BASE = window.location.origin;
+  try {
+    await fetch(API_BASE + "/wellness/assessment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({
+        test_type: currentType,
+        score: score,
+        level: level
+      })
+    });
+  } catch (err) {
+    console.error("Backend offline. Saving to database failed:", err);
+  }
+
+  // Keep LocalStorage as a local cache fallback
+  const key="gitaAssessment_"+currentType;
+  let history;
+  try{
+    history = JSON.parse(localStorage.getItem(key));
+    if(!Array.isArray(history)) history = [];
+  }catch{
+    history = [];
+  }
+  history.push({
+    score,
+    level,
+    date:new Date().toLocaleDateString()
+  });
+  localStorage.setItem(key, JSON.stringify(history));
+
+  document.getElementById("app").innerHTML=`
+    <h2>Result</h2>
+    <div class="result">
+      <p>Your level is</p>
+      <div class="level">${level}</div>
+      <button class="submit-btn" onclick="location.href='dashboard.html'">
+        Go to Dashboard
+      </button>
+    </div>`;
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign Up • GitaAI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Segoe UI",system-ui,sans-serif;
+}
+
+/* ===== COLOR THEME ===== */
+:root{
+  --gold:#facc15;
+  --gold-soft:#fde68a;
+  --dark:#020617;
+  --panel:#071826;
+  --input:#0f172a;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+}
+
+/* ===== BACKGROUND ===== */
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at center, rgba(250,204,21,.12), transparent 55%),
+    linear-gradient(#020617,#020617);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text);
+  overflow:hidden;
+}
+
+/* ===== VIDEO BACKGROUND ===== */
+.video-bg{
+  position:fixed;
+  inset:-20%;
+  z-index:1;
+  pointer-events:none;
+}
+
+.video-bg video{
+  width:140%;
+  height:140%;
+  object-fit:cover;
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%) scale(0.5);
+  opacity:.45;
+  filter:brightness(.7) contrast(1.15) saturate(1.15);
+}
+
+.video-bg::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at center, rgba(250,204,21,.25), transparent 65%),
+    linear-gradient(rgba(2,6,23,.6), rgba(2,6,23,.6));
+}
+
+/* ===== CARD ===== */
+.auth-container{
+  width:900px;
+  max-width:96%;
+  height:580px;
+  background:var(--panel);
+  border-radius:18px;
+  display:flex;
+  overflow:hidden;
+  box-shadow:0 40px 120px rgba(0,0,0,.9);
+  border:1px solid rgba(250,204,21,.25);
+  position:relative;
+  z-index:5;
+  backdrop-filter: blur(2px);
+}
+
+/* ===== LEFT ===== */
+.login-side{
+  flex:1;
+  padding:60px 50px;
+}
+
+.login-side h2{
+  font-size:28px;
+  margin-bottom:30px;
+  color:var(--gold);
+}
+
+.field{
+  margin-bottom:18px;
+}
+
+.field label{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:6px;
+  display:block;
+}
+
+.field input{
+  width:100%;
+  padding:12px;
+  background:var(--input);
+  border:none;
+  border-radius:10px;
+  color:var(--text);
+  font-size:15px;
+}
+
+.field input:focus{
+  outline:none;
+  box-shadow:0 0 0 2px rgba(250,204,21,.35);
+}
+
+/* ===== BUTTON ===== */
+.login-btn{
+  margin-top:10px;
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:30px;
+  background:linear-gradient(135deg,var(--gold),#f59e0b);
+  color:#020617;
+  font-weight:800;
+  font-size:15px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.login-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 15px 40px rgba(250,204,21,.45);
+}
+
+/* ===== LINKS ===== */
+.signup-text{
+  margin-top:18px;
+  font-size:14px;
+}
+
+.signup-text a{
+  color:var(--gold);
+  text-decoration:none;
+}
+
+.contact-text{
+  margin-top:10px;
+  font-size:13px;
+}
+
+.contact-text a{
+  color:var(--muted);
+}
+
+.contact-text a:hover{
+  color:var(--gold);
+}
+
+/* ===== RIGHT PANEL ===== */
+.welcome-side{
+  flex:1;
+  background:linear-gradient(135deg,#3b2f12,#020617);
+  clip-path:polygon(20% 0,100% 0,100% 100%,0 100%);
+  color:var(--text);
+  padding:60px 40px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  border-left:1px solid rgba(250,204,21,.25);
+  position:relative;
+  overflow:hidden;
+}
+
+.welcome-side h1{
+  font-size:32px;
+  margin-bottom:18px;
+  color:var(--gold);
+}
+
+.welcome-side p{
+  font-size:15px;
+  color:#e5e7eb;
+  max-width:260px;
+  z-index:2;
+}
+
+/* ===== CHAKRA ===== */
+.chakra{
+  position:absolute;
+  inset:-40%;
+  background:
+    conic-gradient(
+      transparent 0deg,
+      rgba(250,204,21,.35) 20deg,
+      transparent 40deg,
+      rgba(250,204,21,.35) 60deg,
+      transparent 80deg
+    );
+  border-radius:50%;
+  filter:blur(2px);
+  animation:spinChakra 28s linear infinite;
+  opacity:.35;
+  pointer-events:none;
+}
+
+@keyframes spinChakra{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:820px){
+  .auth-container{
+    flex-direction:column;
+    height:auto;
+  }
+  .welcome-side{
+    clip-path:none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND VIDEO -->
+<div class="video-bg">
+  <video autoplay muted loop playsinline>
+    <source src="./vedio - ROTATE - Videobolt.net.mp4" type="video/mp4">
+  </video>
+</div>
+
+<div class="auth-container">
+
+  <!-- SIGN UP -->
+  <div class="login-side">
+    <h2>Create Account</h2>
+
+    <div class="field">
+      <label>Full Name</label>
+      <input type="text" placeholder="Enter your name">
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" placeholder="Enter email">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input type="password" placeholder="Create password">
+    </div>
+
+    <div class="field">
+      <label>Confirm Password</label>
+      <input type="password" placeholder="Confirm password">
+    </div>
+
+    <button class="login-btn">
+      Sign Up
+    </button>
+
+    <div class="signup-text">
+      Already have an account?
+      <a href="signin.html">Login</a>
+    </div>
+
+    <div class="contact-text">
+      <a href="contact.html">Contact Us</a>
+    </div>
+  </div>
+
+  <!-- WELCOME -->
+  <div class="welcome-side">
+    <div class="chakra"></div>
+    <h1>WELCOME</h1>
+    <p>
+      Begin your journey with wisdom, clarity,
+      and divine guidance from the Bhagavad Gita.
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>
