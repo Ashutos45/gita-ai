@@ -35,5 +35,6 @@ sentence-transformers==2.7.0
 faiss-cpu==1.8.0
 
 # --- Speech ---
-openai-whisper==20231117
+# openai-whisper installed separately in Dockerfile (requires --no-build-isolation)
+# due to setuptools>=70 breaking pkg_resources in isolated build envs
 
