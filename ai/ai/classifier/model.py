@@ -45,13 +45,27 @@ def load_model_lazy():
                     has_local_weights = os.path.isfile(weights_file) or os.path.isfile(pytorch_weights)
 
                     if has_local_weights:
-                        print("[Lazy Load] Loading fine-tuned local model weights...")
-                        tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_PATH)
-                        emotion_model = DistilBertForSequenceClassification.from_pretrained(MODEL_PATH)
-                    else:
+                        print("[Lazy Load] Found local model weights. Attempting to load...")
+                        print(f"[Lazy Load] Model Path: {MODEL_PATH}")
+                        print(f"[Lazy Load] Safetensors: {os.path.join(MODEL_PATH, 'model.safetensors')}")
+                        print(f"[Lazy Load] Config: {os.path.join(MODEL_PATH, 'config.json')}")
+                        print(f"[Lazy Load] Tokenizer: {os.path.join(MODEL_PATH, 'tokenizer.json')}")
+                        
+                        try:
+                            tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_PATH)
+                            emotion_model = DistilBertForSequenceClassification.from_pretrained(MODEL_PATH)
+                            print("[Lazy Load] Successfully loaded fine-tuned local model.")
+                        except Exception as inner_e:
+                            print(f"[Lazy Load] ERROR loading local model: {inner_e}")
+                            import traceback
+                            traceback.print_exc()
+                            print("[Lazy Load] Falling back to HuggingFace base model...")
+                            has_local_weights = False # Force fallback
+
+                    if not has_local_weights:
                         # Fallback: load base DistilBERT from HuggingFace Hub
                         # with our custom label config for 5 emotion classes
-                        print("[Lazy Load] Local weights missing. Loading base DistilBERT from HuggingFace Hub...")
+                        print("[Lazy Load] Local weights missing or failed. Loading base DistilBERT from HuggingFace Hub...")
                         HF_BASE = "distilbert-base-uncased"
                         # Load label config from our config.json
                         if os.path.exists(LABEL_MAP_PATH):
@@ -90,6 +104,8 @@ def load_model_lazy():
                         label2id.update(emotion_model.config.label2id)
                     print("[Lazy Load] DistilBERT loaded successfully.")
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
                     raise RuntimeError(f"Failed to load emotion model: {e}")
 
 
