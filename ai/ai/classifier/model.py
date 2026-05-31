@@ -34,14 +34,52 @@ def load_model_lazy():
             if tokenizer is None or emotion_model is None:
                 print("[Lazy Load] Loading DistilBERT emotion model...")
                 try:
-                    import torch
+                    import torch as _torch
                     from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                    tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_PATH)
-                    emotion_model = DistilBertForSequenceClassification.from_pretrained(MODEL_PATH)
+                    torch = _torch
+                    device = _torch.device("cuda" if _torch.cuda.is_available() else "cpu")
+
+                    # Check if local fine-tuned weights exist
+                    weights_file = os.path.join(MODEL_PATH, "model.safetensors")
+                    pytorch_weights = os.path.join(MODEL_PATH, "pytorch_model.bin")
+                    has_local_weights = os.path.isfile(weights_file) or os.path.isfile(pytorch_weights)
+
+                    if has_local_weights:
+                        print("[Lazy Load] Loading fine-tuned local model weights...")
+                        tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_PATH)
+                        emotion_model = DistilBertForSequenceClassification.from_pretrained(MODEL_PATH)
+                    else:
+                        # Fallback: load base DistilBERT from HuggingFace Hub
+                        # with our custom label config for 5 emotion classes
+                        print("[Lazy Load] Local weights missing. Loading base DistilBERT from HuggingFace Hub...")
+                        HF_BASE = "distilbert-base-uncased"
+                        # Load label config from our config.json
+                        if os.path.exists(LABEL_MAP_PATH):
+                            with open(LABEL_MAP_PATH, "r") as f:
+                                label_mapping = json.load(f)
+                            _id2label = {int(k): v for k, v in label_mapping.get("id2label", {}).items()}
+                            _label2id = label_mapping.get("label2id", {})
+                        else:
+                            _id2label = {0: "anger", 1: "confusion", 2: "fear", 3: "sadness", 4: "stress"}
+                            _label2id = {"anger": 0, "confusion": 1, "fear": 2, "sadness": 3, "stress": 4}
+
+                        from transformers import DistilBertConfig
+                        config = DistilBertConfig.from_pretrained(
+                            HF_BASE,
+                            num_labels=len(_id2label),
+                            id2label=_id2label,
+                            label2id=_label2id,
+                            problem_type="single_label_classification"
+                        )
+                        tokenizer = DistilBertTokenizerFast.from_pretrained(HF_BASE)
+                        emotion_model = DistilBertForSequenceClassification.from_pretrained(
+                            HF_BASE, config=config, ignore_mismatched_sizes=True
+                        )
+                        print("[Lazy Load] HuggingFace base model loaded (untuned — emotion classification will use keyword rules as primary signal).")
+
                     emotion_model.to(device)
                     emotion_model.eval()
-                    
+
                     if os.path.exists(LABEL_MAP_PATH):
                         with open(LABEL_MAP_PATH, "r") as f:
                             label_mapping = json.load(f)

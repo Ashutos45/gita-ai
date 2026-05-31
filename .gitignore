@@ -37,7 +37,8 @@ generated_audio/
 Thumbs.db
 
 # ML Models and weights
-*.safetensors
+# Note: *.safetensors tracked via Git LFS (see .gitattributes)
+# *.safetensors  <-- do NOT ignore, tracked via LFS
 *.pt
 *.pth
 *.bin

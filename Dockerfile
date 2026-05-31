@@ -1,35 +1,54 @@
-# Dockerfile
+# Dockerfile — Production-ready for Railway
 FROM python:3.11-slim
 
-# Set environment variables
+# =====================================
+# Environment Variables
+# =====================================
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 ENV ENV=production
 
+# Disable HuggingFace progress bars in logs
+ENV HF_HUB_DISABLE_PROGRESS_BARS=1
+# Use CPU-only torch (no CUDA on Railway)
+ENV TRANSFORMERS_CACHE=/app/.cache/huggingface
+
 WORKDIR /app
 
-# Install system dependencies (build tools + ffmpeg for Whisper)
+# =====================================
+# System Dependencies
+# =====================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ffmpeg \
     git \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file first to utilize Docker build cache
+# =====================================
+# Python Dependencies
+# (Install CPU PyTorch first to avoid huge CUDA download)
+# =====================================
 COPY requirements.txt .
 
-# Install dependencies (CPU-optimized PyTorch first, then others)
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir torch==2.2.2 --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire codebase
-
+# =====================================
+# Copy Source Code
+# =====================================
 COPY . .
 
-# Expose server port
+# =====================================
+# Expose Port
+# =====================================
 EXPOSE 8000
 
-# Set default startup command
-CMD ["sh", "-c", "python -m Ashu.seed_gita && uvicorn Ashu.main:app --host 0.0.0.0 --port ${PORT}"]
+# =====================================
+# Startup Command
+# Seeds DB on first run (idempotent — skips if already seeded)
+# Uvicorn binds to Railway's $PORT (falls back to 8000)
+# =====================================
+CMD ["sh", "-c", "python -m Ashu.seed_gita && uvicorn Ashu.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
