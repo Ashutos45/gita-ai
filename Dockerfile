@@ -24,11 +24,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir torch==2.2.2 --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Pre-download SentenceTransformer and Whisper models to speed up startup
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" && \
-    python -c "import whisper; whisper.load_model('base')"
-
 # Copy the entire codebase
+
 COPY . .
 
 # Expose server port
