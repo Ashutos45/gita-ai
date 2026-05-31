@@ -22,11 +22,13 @@ from sqlalchemy.exc import SQLAlchemyError
 # ======================================
 
 class SeekerGuidance(BaseModel):
-    emotional_understanding: str = Field(description="A compassionate, brief acknowledgment of the seeker's current emotional state.")
+    personalized_greeting: str = Field(description="A warm, personalized greeting addressing the seeker by name (e.g. 'Welcome, Ashutosh.').")
+    emotional_understanding: str = Field(description="A compassionate, human-like acknowledgment of the seeker's current emotional state and problem. Empathize first before giving the verse.")
+    verse_introduction: str = Field(description="A natural transition sentence introducing the verse, e.g. 'The Bhagavad Gita offers guidance for this situation through the following verse.'")
     why_chosen: str = Field(description="Explanation of why the selected verse is relevant to the seeker's context.")
     personalized_guidance: str = Field(description="Philosophical, Krishna-inspired counseling tailored to the user's specific struggle and memory context.")
-    practical_steps: List[str] = Field(description="2 or 3 clear, actionable steps the seeker can take today.")
-    reflection_exercise: str = Field(description="A question or exercise for self-reflection.")
+    practical_steps: List[str] = Field(description="3 to 5 clear, actionable steps the seeker can take today.")
+    reflection_exercise: str = Field(description="A single question or exercise for self-reflection.")
 
 
 class QueryAnalysis(BaseModel):
@@ -153,7 +155,9 @@ def regenerate_user_memory_summary(db, user_id: int):
 
 def format_krishna_response_to_html(guidance, verse, target_lang="en") -> str:
     # 1. Sanitize all generated inputs to prevent HTML/Script Injection (XSS protection)
+    personalized_greeting = html.escape(guidance.personalized_greeting)
     emotional_understanding = html.escape(guidance.emotional_understanding)
+    verse_introduction = html.escape(guidance.verse_introduction)
     why_chosen = html.escape(guidance.why_chosen)
     personalized_guidance = html.escape(guidance.personalized_guidance)
     reflection_exercise = html.escape(guidance.reflection_exercise)
@@ -196,29 +200,43 @@ def format_krishna_response_to_html(guidance, verse, target_lang="en") -> str:
 
     html_content = f"""<div class="krishna-response" style="font-family: 'Crimson Text', serif; color: #3b2510; line-height: 1.6; display: flex; flex-direction: column; gap: 12px;">
   
-  <!-- 1. Emotional Understanding -->
-  <div class="understanding-block" style="font-style: italic; border-left: 3px solid #facc15; padding-left: 12px; margin-bottom: 8px;">
+  <!-- 1. Personalized Greeting -->
+  <div class="greeting-block" style="font-size: 1.1em; font-weight: bold; margin-bottom: 2px;">
+    {personalized_greeting}
+  </div>
+
+  <!-- 2. Emotional Understanding -->
+  <div class="understanding-block" style="font-size: 1.05em; font-style: italic; border-left: 3px solid #facc15; padding-left: 12px; margin-bottom: 8px;">
     {emotional_understanding}
   </div>
 
-  <!-- 2, 3, 4: Grounded Verse Data (Sanitized & Strict) -->
-  {verse_citation_html}
-  {sanskrit_html}
-  {translation_html}
+  <!-- 3. Verse Introduction -->
+  <div class="verse-intro" style="margin-bottom: 4px;">
+    {verse_introduction}
+  </div>
+
+  <!-- 4. Verse Data (Sanitized & Strict) -->
+  <div class="verse-section" style="background: rgba(254, 243, 199, 0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(250, 204, 21, 0.2); margin-bottom: 8px;">
+    {verse_citation_html}
+    {sanskrit_html}
+    {translation_html}
+  </div>
 
   <!-- 5. Why This Verse Was Chosen -->
   <div class="verse-choice" style="font-size: 0.95em; color: #78350f; background: rgba(251, 191, 36, 0.08); padding: 10px; border-radius: 8px;">
-    <strong>Why this wisdom was chosen:</strong> {why_chosen}
+    <strong style="color: #b45309; display: block; margin-bottom: 4px;">🕉️ Why This Wisdom Applies To You:</strong> 
+    {why_chosen}
   </div>
 
   <!-- 6. Personalized Guidance -->
   <div class="guidance-block" style="font-size: 1.05em; line-height: 1.7; margin-bottom: 8px;">
+    <strong style="color: #b45309; display: block; margin-bottom: 4px;">🎯 Guidance For Your Situation:</strong>
     {personalized_guidance}
   </div>
 
   <!-- 7. Practical Steps -->
   <div class="practical-block" style="background: rgba(254, 243, 199, 0.5); padding: 14px; border-radius: 12px; border: 1px solid rgba(250, 204, 21, 0.25);">
-    <strong style="color: #b45309; display: block; margin-bottom: 6px;">👣 Actions for Alignment:</strong>
+    <strong style="color: #b45309; display: block; margin-bottom: 6px;">✅ What You Can Do Today:</strong>
     <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
        {steps_list}
     </ul>
@@ -226,7 +244,7 @@ def format_krishna_response_to_html(guidance, verse, target_lang="en") -> str:
 
   <!-- 8. Reflection Exercise -->
   <div class="reflection-block" style="border-top: 1px dashed rgba(250, 204, 21, 0.4); padding-top: 10px; margin-top: 8px; font-size: 0.95em; color: #4b5563;">
-    <strong style="color: #d97706;">🧘 Reflection:</strong> {reflection_exercise}
+    <strong style="color: #d97706;">💭 Reflection Question:</strong> {reflection_exercise}
   </div>
 </div>"""
     return html_content
@@ -293,6 +311,7 @@ def generate_reply(text: str, user_id: int = None, db = None):
     english_query = text
     user_preferred_lang = "en"
     user_profile_summary = ""
+    user_name = "Seeker"
 
     # Fetch user preferences & memory summary if DB session is active
     if db is not None and user_id is not None:
@@ -300,6 +319,7 @@ def generate_reply(text: str, user_id: int = None, db = None):
         if user_record:
             user_preferred_lang = user_record.preferred_language or "en"
             user_profile_summary = user_record.memory_summary or ""
+            user_name = user_record.full_name or "Seeker"
 
     # 1. Automatic Language Detection & Query Translation (Pre-RAG)
     gemini_client = get_gemini_client()
@@ -447,14 +467,21 @@ def generate_reply(text: str, user_id: int = None, db = None):
 
             system_instruction = (
                 "You are Lord Krishna, the divine teacher from the Bhagavad Gita. "
-                "Counsel the Seeker in a warm, gentle, and authoritative tone, matching your character in the Gita. "
-                "Structure your reply strictly using the grounding verse provided. "
+                "Counsel the Seeker in a warm, gentle, empathetic, and authoritative tone, matching your character in the Gita. "
+                "CRITICAL RESPONSE FLOW (You must follow this exact emotional progression):\n"
+                "1. Always greet the seeker by their name.\n"
+                "2. First, understand and acknowledge their emotional state and problem naturally, like a real mentor. Empathize BEFORE offering any scripture.\n"
+                "3. Introduce the verse naturally as wisdom for their specific situation (Do NOT abruptly display a verse).\n"
+                "4. Explain why this specific verse was selected based on their problem.\n"
+                "5. Provide personalized guidance connecting the verse directly to their struggle.\n"
+                "6. Offer 3 to 5 practical steps they can do today.\n"
+                "7. End with a single reflection question.\n"
                 f"You must translate and write all text fields in the returned JSON object in the detected language: {detected_lang}.\n"
                 "CRITICAL GROUNDING RULES:\n"
                 "1. Use ONLY the retrieved grounding verse. Do NOT invent other verses.\n"
                 "2. Never fabricate chapter or verse numbers.\n"
                 "3. Never generate any Sanskrit text (Devanagari or transliteration) that is not provided in the Retrieved Grounding Verse.\n"
-                "4. If no grounding verse is provided, explain general spiritual philosophy (Sankhya Yoga, Karma Yoga, Bhakti Yoga) in your own words, without fabricating quotes or verse numbers."
+                "4. If no grounding verse is provided, explain general spiritual philosophy in your own words, without fabricating quotes."
             )
             
             verse_text = f"Chapter {verse.get('chapter')}, Verse {verse.get('verse_number')}: {translated_meaning}"
@@ -474,6 +501,7 @@ def generate_reply(text: str, user_id: int = None, db = None):
                     response = gemini_client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=f"""
+                        Seeker's Name: {user_name}
                         Retrieved Grounding Verse: {verse_text}
                         Seeker Profile Context Summary: {user_profile_summary}
                         Advisory Journey Tracking: {memory_str}
