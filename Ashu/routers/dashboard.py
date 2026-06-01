@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime, timedelta
+from sqlalchemy import func, cast, Date
+from datetime import datetime, timedelta, timezone
 import random
 
 from Ashu.database import SessionLocal
@@ -38,7 +38,7 @@ def get_dashboard_payload(db: Session = Depends(get_db), token_data: dict = Depe
     # Calculate streak (consecutive days of abhyasa or messages)
     # Simple calculation: just count total days active in last 30 days
     last_30_days = datetime.utcnow() - timedelta(days=30)
-    abhyasa_count = db.query(func.date(AbhyasaLog.logged_date)).filter(AbhyasaLog.user_id == user_id, AbhyasaLog.logged_date >= last_30_days).distinct().count()
+    abhyasa_count = db.query(cast(AbhyasaLog.logged_date, Date)).filter(AbhyasaLog.user_id == user_id, AbhyasaLog.logged_date >= last_30_days).distinct().count()
     streak = abhyasa_count  # Simple approximation for now
     
     # Get latest assessments
@@ -72,8 +72,13 @@ def get_dashboard_payload(db: Session = Depends(get_db), token_data: dict = Depe
     needs_assessment = True
     days_since_assessment = None
     if latest_stress:
-        days_since_assessment = (datetime.utcnow().replace(tzinfo=latest_stress.taken_at.tzinfo) - latest_stress.taken_at).days
-        if days_since_assessment < 7:
+        try:
+            now = datetime.now(timezone.utc) if latest_stress.taken_at.tzinfo else datetime.utcnow()
+            days_since_assessment = (now - latest_stress.taken_at).days
+            if days_since_assessment < 7:
+                needs_assessment = False
+        except Exception as e:
+            print("Timezone error:", e)
             needs_assessment = False
 
     # Mock Trend Data for Chart.js
