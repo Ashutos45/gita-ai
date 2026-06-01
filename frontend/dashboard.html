@@ -8,6 +8,7 @@
 
 <!-- Auth guard: single location, runs before anything renders -->
 <script src="auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 /* ================= RESET ================= */
@@ -585,6 +586,133 @@ body.day .abhyasa-sub     { color: #475569; }
   100% { opacity: .2; }
 }
 
+/* ================= PREMIUM DASHBOARD ENHANCEMENTS ================= */
+.premium-header {
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.premium-header h1 {
+  font-size: 28px;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+.premium-header .badge {
+  background: rgba(250, 204, 21, 0.15);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.level-bar-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.level-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #facc15, #f59e0b);
+  border-radius: 10px;
+  width: 0%;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Skeleton Loading Animation */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoad 1.5s infinite;
+  border-radius: 8px;
+  color: transparent !important;
+  pointer-events: none;
+}
+.skeleton * {
+  visibility: hidden;
+}
+@keyframes skeletonLoad {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* AI Insight Typewriter */
+.typewriter {
+  border-right: 2px solid var(--accent);
+  white-space: pre-wrap;
+  overflow: hidden;
+  animation: typing cursor .75s step-end infinite;
+}
+@keyframes cursor { 50% { border-color: transparent } }
+
+/* Achievements Grid */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+.achievement-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 5px;
+  font-size: 11px;
+  color: var(--muted);
+  transition: 0.3s ease;
+}
+.achievement-badge:hover {
+  background: rgba(250, 204, 21, 0.1);
+  border-color: var(--accent);
+  color: var(--text);
+  transform: translateY(-2px);
+}
+.achievement-badge .icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+/* Assessment Reminder Banner */
+.reminder-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.05));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 15px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  display: none; /* hidden by default */
+}
+.reminder-banner p { margin: 0; color: #fca5a5; }
+.reminder-banner button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.reminder-banner button:hover { background: #dc2626; }
+
+/* Chart Container */
+.chart-container {
+  position: relative;
+  height: 200px;
+  width: 100%;
+  margin-top: 15px;
+}
+
 /* ================= INTRO VIDEO ================= */
 #intro {
   position: fixed;
@@ -869,78 +997,56 @@ body.day .msg.ai { background: #fef3c7; color: #92400e; }
       <!-- ===== RIGHT COLUMN ===== -->
       <div>
 
+        <!-- Personalization Header -->
+        <div class="premium-header">
+          <div>
+            <h1 id="userGreeting" class="skeleton">Welcome back, Traveler</h1>
+            <div id="streakBadge" class="badge skeleton">🔥 0 Day Streak</div>
+          </div>
+          <div>
+            <div style="text-align:right; font-size:12px; color:var(--muted);">Growth Journey</div>
+            <div id="levelBadge" style="font-weight:bold; font-size:18px; color:#facc15;" class="skeleton">Level 1</div>
+            <div class="level-bar-track">
+              <div id="levelBar" class="level-bar-fill skeleton" style="width: 10%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessment Reminder Banner -->
+        <div class="reminder-banner" id="assessmentReminder">
+          <p>It's been a while since your last check-in. Take a moment to reflect.</p>
+          <button id="remindTestBtn">Take Assessment</button>
+        </div>
+
         <!-- Daily Wisdom -->
         <div class="card" style="margin-bottom:20px">
-          <h3>Daily Wisdom</h3>
-          <p>You have the right to action, not to its fruits.</p>
+          <h3>📜 Daily Wisdom</h3>
+          <p id="dailyWisdomSanskrit" class="skeleton" style="font-size:18px; margin-bottom:5px;">कर्मण्येवाधिकारस्ते</p>
+          <p id="dailyWisdom" class="skeleton" style="font-style:italic; color:var(--muted); margin-bottom:10px;">You have the right to action, not to its fruits.</p>
+          <p id="dailyInsight" class="skeleton" style="font-size:14px; border-left:3px solid var(--accent); padding-left:10px;">Focus on your effort.</p>
         </div>
 
-        <!-- Topical Guidance -->
-        <div class="card topics" style="margin-bottom:20px">
-          <h3>Topical Guidance</h3>
-          <button id="btnStress">Stress &amp; Anxiety</button>
-          <button id="btnDecision">Decision Making</button>
-          <button id="btnRelationships">Relationships</button>
-          <button class="talk-btn" id="btnGeneral">🕉️ Talk with Krishna</button>
-        </div>
-
-        <!-- Know Yourself -->
-        <div class="card know-yourself" style="margin-bottom:20px">
-          <h3>🧠 Know Yourself</h3>
-          <p>Understand your current mental state before seeking guidance.</p>
-          <button id="testBtn">Take the Self-Understanding Test</button>
-        </div>
-
-        <!-- Inner State Dashboard -->
+        <!-- Emotional Trend Chart -->
         <div class="card inner-dashboard">
-          <h3>🧘 Inner State Dashboard</h3>
-
-          <!-- Stress & Anxiety row -->
-          <div class="state-row">
-            <div class="state-header">
-              <span>Stress &amp; Anxiety</span>
-              <span class="level moderate" id="lowText">Moderate</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill moderate" id="lowBar" style="width:60%"></div>
-            </div>
-            <p class="guidance" id="lowAdvice">Reduce attachment to outcomes. Focus on disciplined effort.</p>
+          <h3>🧘 Inner State Trends</h3>
+          <div class="chart-container">
+            <canvas id="stressChart"></canvas>
           </div>
-
-          <!-- Decision Making row -->
-          <div class="state-row">
-            <div class="state-header">
-              <span>Decision Making</span>
-              <span class="level low" id="decisionText">Low</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill low" id="decisionBar" style="width:30%"></div>
-            </div>
-            <p class="guidance" id="decisionAdvice">Trust your judgment. Act without fear of failure.</p>
+          
+          <!-- AI Insight block -->
+          <div class="ai-advice-card" style="margin-top: 15px;">
+            <p id="aiInsightText" class="typewriter skeleton">Krishna is observing your path...</p>
           </div>
+        </div>
 
-          <!-- Relationships row -->
-          <div class="state-row">
-            <div class="state-header">
-              <span>Relationships</span>
-              <span class="level high" id="relText">High</span>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill high" id="relBar" style="width:85%"></div>
-            </div>
-            <p class="guidance" id="relAdvice">Detach from expectations. Act with compassion, not dependency.</p>
+        <!-- Achievements -->
+        <div class="card" style="margin-top:20px;">
+          <h3>🏆 Achievements</h3>
+          <div class="achievements-grid" id="achievementsContainer">
+            <div class="achievement-badge skeleton"><div class="icon">🔒</div>Loading</div>
+            <div class="achievement-badge skeleton"><div class="icon">🔒</div>Loading</div>
+            <div class="achievement-badge skeleton"><div class="icon">🔒</div>Loading</div>
           </div>
-
-          <!-- AI Advice block — formerly missing DOM elements, now present -->
-          <div class="ai-advice-card">
-            <p id="aiAdvice">Take the Self-Understanding Test to view personalized guidance.</p>
-            <span class="trend-badge" id="improve">Stable</span>
-          </div>
-
-          <!-- Latest stress level label — formerly missing DOM element, now present -->
-          <p style="font-size:13px; color:var(--muted); margin-top:10px;" id="levelText">
-            No stress assessment taken yet.
-          </p>
         </div>
 
       </div><!-- /RIGHT COLUMN -->
@@ -1164,92 +1270,145 @@ async function runHealthAudit() {
   }
 }
 
-/* ===== WELLNESS HISTORY (from backend API) ===== */
-async function syncWellnessHistory() {
+/* ===== PREMIUM DASHBOARD LOGIC ===== */
+let trendChartInstance = null;
+
+async function fetchDashboardPayload() {
   const token = getAccessToken();
   if (!token) return;
 
   try {
-    const res = await fetch(API_BASE + "/wellness/history", {
+    const res = await fetch(API_BASE + "/dashboard/payload", {
       headers: { "Authorization": "Bearer " + token }
     });
 
     if (!res.ok) {
-      console.error("Wellness API error:", res.status);
+      console.error("Dashboard API error:", res.status);
       return;
     }
 
-    const history = await res.json();
-
-    const stressList       = history.filter(function (h) { return h.test_type === "stress"; });
-    const decisionList     = history.filter(function (h) { return h.test_type === "decision"; });
-    const relationshipList = history.filter(function (h) { return h.test_type === "relationships"; });
-
-    // --- Update AI Advice block (levelText, aiAdvice, improve) ---
-    const levelTextEl = document.getElementById("levelText");
-    const aiAdviceEl  = document.getElementById("aiAdvice");
-    const improveEl   = document.getElementById("improve");
-
-    if (stressList.length > 0) {
-      const latest  = stressList[0];
-      const level   = latest.level;
-      const dateStr = new Date(latest.taken_at).toLocaleDateString();
-
-      if (levelTextEl) levelTextEl.textContent = "Latest stress level: " + level + " (Checked: " + dateStr + ")";
-      if (aiAdviceEl)  aiAdviceEl.textContent  = getGuidance("stress", level);
-
-      if (improveEl) {
-        if (stressList.length > 1) {
-          const prev = stressList[1].level;
-          improveEl.textContent = (prev === level) ? "Stable" : "Improving";
-        } else {
-          improveEl.textContent = "Stable";
-        }
+    const payload = await res.json();
+    
+    // 1. Personalization Header
+    const userGreeting = document.getElementById("userGreeting");
+    const streakBadge = document.getElementById("streakBadge");
+    const levelBadge = document.getElementById("levelBadge");
+    const levelBar = document.getElementById("levelBar");
+    
+    if (userGreeting) {
+      userGreeting.classList.remove("skeleton");
+      userGreeting.textContent = "Welcome back, " + payload.user.name.split(" ")[0];
+    }
+    if (streakBadge) {
+      streakBadge.classList.remove("skeleton");
+      streakBadge.textContent = "🔥 " + payload.user.streak + " Day Streak";
+    }
+    if (levelBadge) {
+      levelBadge.classList.remove("skeleton");
+      levelBadge.textContent = "Level " + payload.user.level;
+    }
+    if (levelBar) {
+      levelBar.classList.remove("skeleton");
+      // Calculate XP progress to next level (0-100)
+      const currentLevelBaseXP = (payload.user.level - 1) * 100;
+      let progress = payload.user.xp - currentLevelBaseXP;
+      if (progress > 100) progress = 100;
+      if (progress < 5) progress = 5; // minimum visible bar
+      setTimeout(() => { levelBar.style.width = progress + "%"; }, 100);
+    }
+    
+    // 2. Assessment Reminder
+    const reminder = document.getElementById("assessmentReminder");
+    if (reminder) {
+      if (payload.assessment.needs_reminder) {
+        reminder.style.display = "flex";
+      } else {
+        reminder.style.display = "none";
       }
-    } else {
-      if (levelTextEl) levelTextEl.textContent = "No stress assessment taken yet.";
-      if (aiAdviceEl)  aiAdviceEl.textContent  = "Take the Self-Understanding Test to view personalized guidance.";
-      if (improveEl)   improveEl.textContent   = "Stable";
+    }
+    
+    // 3. Daily Wisdom
+    const wSanskrit = document.getElementById("dailyWisdomSanskrit");
+    const wText = document.getElementById("dailyWisdom");
+    const wInsight = document.getElementById("dailyInsight");
+    
+    if (wSanskrit) { wSanskrit.classList.remove("skeleton"); wSanskrit.textContent = payload.wisdom.sanskrit; }
+    if (wText) { wText.classList.remove("skeleton"); wText.textContent = payload.wisdom.verse; }
+    if (wInsight) { wInsight.classList.remove("skeleton"); wInsight.textContent = payload.wisdom.insight; }
+    
+    // 4. AI Insight
+    const aiInsight = document.getElementById("aiInsightText");
+    if (aiInsight) {
+      aiInsight.classList.remove("skeleton");
+      aiInsight.textContent = payload.insight;
+    }
+    
+    // 5. Chart.js Initialization
+    const ctx = document.getElementById("stressChart");
+    if (ctx) {
+      if (trendChartInstance) trendChartInstance.destroy();
+      
+      trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: payload.trends.labels,
+          datasets: [{
+            label: 'Stress / Anxiety Trend',
+            data: payload.trends.stress_scores,
+            borderColor: '#facc15',
+            backgroundColor: 'rgba(250, 204, 21, 0.1)',
+            borderWidth: 2,
+            pointBackgroundColor: '#facc15',
+            pointBorderColor: '#020617',
+            pointRadius: 4,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { display: false, min: 0, max: 100 },
+            x: { 
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#94a3b8', font: {size: 10} }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
     }
 
-    // --- Inner Dashboard rows ---
-    populateDashboardRow("stress",         "low",      stressList);
-    populateDashboardRow("decision",       "decision", decisionList);
-    populateDashboardRow("relationships",  "rel",      relationshipList);
+    // 6. Achievements
+    const achContainer = document.getElementById("achievementsContainer");
+    if (achContainer) {
+      achContainer.innerHTML = "";
+      if (payload.user.achievements.length === 0) {
+        achContainer.innerHTML = "<div class='achievement-badge' style='grid-column: 1 / -1; opacity: 0.5;'>Complete assessments or meditate to unlock achievements.</div>";
+      } else {
+        payload.user.achievements.forEach(ach => {
+          let icon = "⭐";
+          if (ach.includes("Assessment")) icon = "📝";
+          if (ach.includes("Reflection")) icon = "🧘";
+          if (ach.includes("Streak")) icon = "🔥";
+          
+          const div = document.createElement("div");
+          div.className = "achievement-badge";
+          div.innerHTML = "<div class='icon'>" + icon + "</div>" + ach;
+          achContainer.appendChild(div);
+        });
+      }
+    }
 
   } catch (err) {
-    console.error("Error syncing wellness history:", err);
-    // UI Fallback on API failure
-    const levelTextEl = document.getElementById("levelText");
-    if (levelTextEl) levelTextEl.textContent = "Unable to load wellness history (API error).";
+    console.error("Error fetching dashboard payload:", err);
   }
 }
 
-function populateDashboardRow(type, prefix, list) {
-  if (!list || list.length === 0) return;
-
-  const latest  = list[0];
-  const level   = latest.level;
-  const widthMap = { Low: "30%", Moderate: "60%", High: "90%" };
-
-  const textEl   = document.getElementById(prefix + "Text");
-  const barEl    = document.getElementById(prefix + "Bar");
-  const adviceEl = document.getElementById(prefix + "Advice");
-
-  if (textEl) {
-    textEl.className   = "level " + level.toLowerCase();
-    textEl.textContent = level;
-  }
-
-  if (barEl) {
-    barEl.className    = "bar-fill " + level.toLowerCase();
-    barEl.style.width  = widthMap[level] || "50%";
-  }
-
-  if (adviceEl) {
-    adviceEl.textContent = getGuidance(type, level);
-  }
-}
+document.getElementById("remindTestBtn")?.addEventListener("click", function() {
+  window.location.href = "text.html";
+});
 
 /* ===== ABHYASA (from backend API) ===== */
 async function loadAbhyasa() {
@@ -1336,7 +1495,7 @@ document.addEventListener("DOMContentLoaded", function () {
   requireAuth(async () => {
     const isHealthy = await runHealthAudit();
     if (isHealthy) {
-        syncWellnessHistory();
+        fetchDashboardPayload();
         loadAbhyasa();
     }
   });

@@ -14,7 +14,7 @@ def verify_production(base_url):
     print(f"\n[1] Authentication Test")
     print(f"  -> Attempting Signup: {test_email}")
     
-    signup_resp = requests.post(f"{base_url}/signup", json={
+    signup_resp = requests.post(f"{base_url}/auth/signup", json={
         "full_name": "Prod Test User",
         "email": test_email,
         "password": test_password
@@ -29,7 +29,7 @@ def verify_production(base_url):
         return
         
     print("  -> Attempting Login")
-    login_resp = requests.post(f"{base_url}/login", json={
+    login_resp = requests.post(f"{base_url}/auth/login", json={
         "email": test_email,
         "password": test_password
     })
@@ -49,7 +49,7 @@ def verify_production(base_url):
         return
 
     print("\n[2] Token Refresh Test")
-    refresh_resp = requests.post(f"{base_url}/refresh", json={
+    refresh_resp = requests.post(f"{base_url}/auth/refresh", json={
         "refresh_token": refresh_token
     })
     

@@ -17,6 +17,7 @@ from Ashu.routers.wellness import router as wellness_router
 from Ashu.routers.abhyasa import router as abhyasa_router
 from Ashu.routers.websocket import router as websocket_router
 from Ashu.routers.health import router as health_router
+from Ashu.routers.dashboard import router as dashboard_router
 
 # Path to frontend folder (sibling of Ashu/)
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
@@ -120,6 +121,7 @@ app.include_router(wellness_router)
 app.include_router(abhyasa_router)
 app.include_router(websocket_router)
 app.include_router(health_router)
+app.include_router(dashboard_router)
 
 
 # =====================================
