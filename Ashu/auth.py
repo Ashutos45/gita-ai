@@ -9,8 +9,14 @@ from Ashu.auth_utils import (
     hash_password,
     verify_password,
     create_access_token,
+    create_refresh_token,
     verify_token,
 )
+
+from pydantic import BaseModel
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 router = APIRouter(tags=["auth"])
 security = HTTPBearer()
@@ -50,9 +56,10 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token({"user_id": new_user.id})
+    access_token = create_access_token({"user_id": new_user.id})
+    refresh_token = create_refresh_token({"user_id": new_user.id})
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
 # ==========================
@@ -69,9 +76,29 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    token = create_access_token({"user_id": db_user.id})
+    access_token = create_access_token({"user_id": db_user.id})
+    refresh_token = create_refresh_token({"user_id": db_user.id})
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+# ==========================
+# Refresh Token
+# ==========================
+
+@router.post("/refresh", response_model=Token)
+def refresh(req: RefreshRequest, db: Session = Depends(get_db)):
+    payload = verify_token(req.refresh_token, expected_type="refresh")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user = db.query(User).filter(User.id == payload.get("user_id")).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    access_token = create_access_token({"user_id": user.id})
+    refresh_token = create_refresh_token({"user_id": user.id})
+    
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
 # ==========================
@@ -84,9 +111,9 @@ def get_current_user(
 ):
     token = credentials.credentials
 
-    payload = verify_token(token)
+    payload = verify_token(token, expected_type="access")
     if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid or expired access token")
 
     user = db.query(User).filter(User.id == payload.get("user_id")).first()
     if not user:

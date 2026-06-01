@@ -4,11 +4,7 @@
 <meta charset="UTF-8">
 <title>My Journey • GitaAI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-  if (!localStorage.getItem("gitaToken")) {
-    window.location.replace("signin.html");
-  }
-</script>
+<script src="auth.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Inter:wght@400;500;600&display=swap');
 
@@ -449,6 +445,8 @@ body{
 </div>
 
 <script>
+document.addEventListener("DOMContentLoaded", () => {
+requireAuth(() => {
 /* ================= USER ================= */
 const userName = localStorage.getItem("gitaUser") || "Seeker";
 document.getElementById("userName").innerText = userName;
@@ -544,6 +542,8 @@ if(!dailyQuote || localStorage.getItem("gitaQuoteDate") !== todayKey){
 }
 
 document.querySelector(".quote").innerText = `“${dailyQuote}”`;
+});
+});
 </script>
 
 </body>

@@ -269,9 +269,14 @@ async function loginUser(){
       return;
     }
 
-    // ✅ Save JWT
+  if (data.access_token) {
     localStorage.setItem("gitaToken", data.access_token);
+    if (data.refresh_token) {
+        localStorage.setItem("gitaRefreshToken", data.refresh_token);
+    }
     localStorage.setItem("gitaUser", email);
+    window.location.replace("dashboard.html");
+  } else {
 
     // ✅ DIRECT REDIRECT (NO POPUP)
     window.location.href = "dashboard.html";

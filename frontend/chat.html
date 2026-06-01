@@ -4,11 +4,7 @@
 <meta charset="UTF-8">
 <title>GitaAI • Chat with Krishna</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-  if (!localStorage.getItem("gitaToken")) {
-    window.location.replace("signin.html");
-  }
-</script>
+<script src="auth.js"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Crimson+Text&display=swap');
@@ -662,100 +658,21 @@ function addAIMessage(text){
 ========================= */
 const API_BASE = window.location.origin;
 
-let token = null;
+// Auth is handled by auth.js now.
+// Auth is handled by auth.js now.
 async function ensureLogin() {
-  const storedToken = localStorage.getItem("gitaToken");
-  if (!storedToken) {
-    console.warn("No session token found. Redirecting to login...");
-    window.location.replace("signin.html");
+  if (!getAccessToken()) {
     throw new Error("Authentication required.");
   }
-  token = storedToken;
-  console.log("Session authenticated using browser token.");
 }
-
-async function generateKrishnaReply(userText) {
-  try {
-    // 🔐 Ensure login
-    await ensureLogin();
-
-    const response = await fetch(API_BASE + "/chat/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
-      body: JSON.stringify({
-         text: userText,
-         voice_mode: liveMode
-})    });
-
-    console.log("Chat status:", response.status);
-
-    // ❌ Server error handling
-    if (!response.ok) {
-      console.error("Server error:", response.status);
-      return "⚠ Server error. Please try again.";
-    }
-
-    const data = await response.json();
-    console.log("Backend response:", data);
-
-    if (!data || !data.text) {
-      return "⚠ Unexpected server response.";
-    }
-
-    const ai = data.text;
-
-    let html = "";
-
-    // 🕉 If verse exists → show sloka block
-    if (ai.chapter && ai.verse_number && ai.sanskrit) {
-      html += `
-        <div style="
-          margin-bottom:18px;
-          padding:14px;
-          border-radius:12px;
-          background:linear-gradient(#f8ebc8,#eedaa5);
-        ">
-          <div style="
-            font-weight:bold;
-            margin-bottom:10px;
-          ">
-            Bhagavad Gita — Chapter ${ai.chapter}, Verse ${ai.verse_number}
-          </div>
-
-          <div style="
-            font-family:'Noto Serif Devanagari', serif;
-            font-size:20px;
-            line-height:1.7;
-          ">
-            ${ai.sanskrit}
-          </div>
-        </div>
-      `;
-    }
-
-    // 🧠 Explanation (always shown)
-    html += `
-      <div style="line-height:1.8;">
-        ${ai.explanation || "Wisdom is silent for a moment..."}
-      </div>
-    `;
-
-    return html;
-
-  } catch (error) {
-    console.error("API ERROR:", error);
-    return "Connection to wisdom failed. Try again.";
-  }
-}
- 
-
 
 /* =========================
-   TEXT CHAT (NORMAL)
+   TEXT CHAT (NORMAL & STREAMING)
 ========================= */
+let ws = null;
+let currentAIMsgDiv = null;
+let streamedHTML = "";
+
 async function ask(){
   const q = document.getElementById("q");
   if(!q.value.trim()) return;
@@ -764,22 +681,86 @@ async function ask(){
   q.value = "";
 
   addUserMessage(userText);
+  saveMessage(currentChat, "user", userText);
 
+  // Show thinking indicator
   const typing = document.createElement("div");
   typing.className = "typing";
-  typing.innerText = "Krishna is contemplating…";
+  typing.id = "typingIndicator";
+  typing.innerText = "Krishna is reflecting…";
   chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
 
   krishna.classList.add("active");
 
-  setTimeout(async () => {
-    typing.remove();
+  // Open WebSocket connection
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/chat/stream?token=${getAccessToken()}`;
+  
+  ws = new WebSocket(wsUrl);
+  streamedHTML = "";
+  currentAIMsgDiv = null;
+  
+  // Handle Voice Mode states
+  const voiceStatus = document.getElementById("voiceOverlayStatus");
+  const voiceCircle = document.getElementById("voiceCircleIndicator");
 
-    const reply = await generateKrishnaReply(userText);
-    addAIMessage(reply);
-
-    setTimeout(() => krishna.classList.remove("active"), 1000);
-  }, 1200);
+  ws.onopen = () => {
+      ws.send(JSON.stringify({ text: userText }));
+      if (liveMode && voiceStatus) {
+          voiceStatus.innerText = "Krishna is reflecting...";
+          if (voiceCircle) voiceCircle.style.animation = "none";
+      }
+  };
+  
+  ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === "verse_data") {
+          const ti = document.getElementById("typingIndicator");
+          if (ti) ti.remove();
+          
+          currentAIMsgDiv = document.createElement("div");
+          currentAIMsgDiv.className = "msg ai";
+          chat.appendChild(currentAIMsgDiv);
+          
+          if (liveMode && voiceStatus) {
+              voiceStatus.innerText = "Krishna is speaking...";
+              if (voiceCircle) voiceCircle.style.animation = "pulse 1.6s infinite";
+          }
+          
+      } else if (data.type === "chunk") {
+          if (currentAIMsgDiv) {
+              streamedHTML += data.text;
+              currentAIMsgDiv.innerHTML = streamedHTML;
+              chat.scrollTop = chat.scrollHeight;
+          }
+      } else if (data.type === "end") {
+          setTimeout(() => krishna.classList.remove("active"), 1000);
+          saveMessage(currentChat, "ai", streamedHTML);
+          
+          if (liveMode) {
+              const tempDiv = document.createElement("div");
+              tempDiv.innerHTML = streamedHTML;
+              const textToSpeak = tempDiv.innerText || tempDiv.textContent || "";
+              
+              if (voiceStatus) voiceStatus.innerText = "Listening...";
+              speakWisdom(textToSpeak, () => {
+                  startSpeechRec();
+              });
+          }
+          ws.close();
+      }
+  };
+  
+  ws.onerror = (err) => {
+      console.error("WebSocket error", err);
+      const ti = document.getElementById("typingIndicator");
+      if (ti) ti.remove();
+      addAIMessage("⚠ Connection to wisdom failed. Try again.");
+      if (liveMode && voiceStatus) voiceStatus.innerText = "Error connected. Try again.";
+      ws.close();
+  };
 }
 </script>
 
@@ -898,7 +879,11 @@ addAIMessage = function(text) {
 };
 
 /* INIT */
-loadChats();
+document.addEventListener("DOMContentLoaded", function () {
+    requireAuth(() => {
+        loadChats();
+    });
+});
 </script>
 
 <script>
@@ -1083,7 +1068,7 @@ async function startMicOnce() {
         const response = await fetch(API_BASE + "/voice/chat", {
           method: "POST",
           headers: {
-            "Authorization": "Bearer " + token
+            "Authorization": "Bearer " + getAccessToken()
           },
           body: formData
         });
@@ -1152,6 +1137,9 @@ function openChatMenu(e, chatId){
   }
 }
 function toggleVoiceUI(){
+  // Open WebSocket connection
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/chat/stream?token=${getAccessToken()}`;
   liveMode = !liveMode;
 
   const btn = document.getElementById("voiceToggle");

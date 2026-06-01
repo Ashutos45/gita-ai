@@ -4,11 +4,7 @@
 <meta charset="UTF-8">
 <title>GitaAI • Self Assessment</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-  if (!localStorage.getItem("gitaToken")) {
-    window.location.replace("signin.html");
-  }
-</script>
+<script src="auth.js"></script>
 
 <style>
 body{
@@ -235,7 +231,7 @@ async function submitTest(){
   if(score>=25) level="High";
 
   // Sync with Backend Database
-  const token = localStorage.getItem("gitaToken");
+  const token = getAccessToken();
   const API_BASE = window.location.origin;
   try {
     await fetch(API_BASE + "/wellness/assessment", {

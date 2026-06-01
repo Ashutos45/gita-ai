@@ -4,11 +4,7 @@
 <meta charset="UTF-8">
 <title>GitaAI • Daily Dialogue</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-  if (!localStorage.getItem("gitaToken")) {
-    window.location.replace("signin.html");
-  }
-</script>
+<script src="auth.js"></script>
 
 <style>
 *{
@@ -529,8 +525,11 @@ const refEl = document.getElementById("ref");
 const meaningEl = document.getElementById("meaning");
 const greetEl = document.getElementById("greet");
 
-greetEl.textContent =
-  new Date().getHours() < 18 ? "Rise and act with clarity." : "Release the day, rest the mind.";
+document.addEventListener("DOMContentLoaded", () => {
+    requireAuth(() => {
+        greetEl.textContent = new Date().getHours() < 18 ? "Rise and act with clarity." : "Release the day, rest the mind.";
+    });
+});
 
 function typeText(el, text){
   el.textContent="";

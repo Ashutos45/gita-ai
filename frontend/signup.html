@@ -317,6 +317,9 @@ showPopup("Signup successful!","success");
 
 
 localStorage.setItem("gitaToken", result.access_token || "temp-user");
+if (result.refresh_token) {
+    localStorage.setItem("gitaRefreshToken", result.refresh_token);
+}
 
 
 
