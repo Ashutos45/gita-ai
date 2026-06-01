@@ -38,7 +38,7 @@ def get_dashboard_payload(db: Session = Depends(get_db), token_data: dict = Depe
     # Calculate streak (consecutive days of abhyasa or messages)
     # Simple calculation: just count total days active in last 30 days
     last_30_days = datetime.utcnow() - timedelta(days=30)
-    abhyasa_count = db.query(func.date(AbhyasaLog.logged_at)).filter(AbhyasaLog.user_id == user_id, AbhyasaLog.logged_at >= last_30_days).distinct().count()
+    abhyasa_count = db.query(func.date(AbhyasaLog.logged_date)).filter(AbhyasaLog.user_id == user_id, AbhyasaLog.logged_date >= last_30_days).distinct().count()
     streak = abhyasa_count  # Simple approximation for now
     
     # Get latest assessments
