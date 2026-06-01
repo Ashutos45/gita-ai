@@ -1243,9 +1243,9 @@ async function runHealthAudit() {
   if (!token) return false;
 
   try {
-    const response = await fetch(API_BASE + "/health/dashboard", {
+    const response = await fetchWithTimeout(API_BASE + "/health/dashboard", {
       headers: { "Authorization": "Bearer " + token }
-    });
+    }, 5000);
     
     if (!response.ok) {
         throw new Error(`Health Audit Failed: HTTP ${response.status}`);
@@ -1261,13 +1261,20 @@ async function runHealthAudit() {
     return true;
   } catch (err) {
     console.error("Health Audit Error:", err);
-    // Graceful fallback display
-    const dashboardCards = document.querySelectorAll(".card");
-    dashboardCards.forEach(card => {
-        card.innerHTML = `<h3 style="color:#ef4444;">API Error</h3><p style="color:#f87171;">${err.message}</p><button onclick="location.reload()" style="margin-top:10px;padding:8px 12px;background:#334155;color:white;border:none;border-radius:4px;cursor:pointer;">Retry</button>`;
-    });
     return false;
   }
+}
+
+/* ===== FETCH TIMEOUT UTILITY ===== */
+async function fetchWithTimeout(resource, options = {}, timeout = 5000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal
+  });
+  clearTimeout(id);
+  return response;
 }
 
 /* ===== PREMIUM DASHBOARD LOGIC ===== */
@@ -1277,13 +1284,43 @@ async function fetchDashboardPayload() {
   const token = getAccessToken();
   if (!token) return;
 
+  const handleFallback = (errMsg) => {
+    console.error("Applying fallback UI due to:", errMsg);
+    
+    document.getElementById("userGreeting")?.classList.remove("skeleton");
+    document.getElementById("userGreeting")?.setAttribute("style", "color: #94a3b8;");
+    const ug = document.getElementById("userGreeting");
+    if(ug) ug.textContent = "Welcome back";
+    
+    document.getElementById("streakBadge")?.classList.remove("skeleton");
+    document.getElementById("levelBadge")?.classList.remove("skeleton");
+    document.getElementById("levelBar")?.classList.remove("skeleton");
+
+    const wSanskrit = document.getElementById("dailyWisdomSanskrit");
+    const wText = document.getElementById("dailyWisdom");
+    const wInsight = document.getElementById("dailyInsight");
+    
+    if(wSanskrit) { wSanskrit.classList.remove("skeleton"); wSanskrit.textContent = "Data unavailable"; }
+    if(wText) { wText.classList.remove("skeleton"); wText.textContent = "Could not load wisdom at this time."; }
+    if(wInsight) { wInsight.classList.remove("skeleton"); wInsight.textContent = "Please try again later."; }
+    
+    const aiInsight = document.getElementById("aiInsightText");
+    if(aiInsight) { aiInsight.classList.remove("skeleton"); aiInsight.textContent = "API Error: No insights available."; }
+    
+    const achContainer = document.getElementById("achievementsContainer");
+    if (achContainer) {
+      achContainer.innerHTML = "<div class='achievement-badge' style='grid-column: 1 / -1; opacity: 0.5;'>No data available yet.</div>";
+    }
+  };
+
   try {
-    const res = await fetch(API_BASE + "/dashboard/payload", {
+    const res = await fetchWithTimeout(API_BASE + "/dashboard/payload", {
       headers: { "Authorization": "Bearer " + token }
-    });
+    }, 5000);
 
     if (!res.ok) {
       console.error("Dashboard API error:", res.status);
+      handleFallback(`HTTP ${res.status}`);
       return;
     }
 
@@ -1403,6 +1440,7 @@ async function fetchDashboardPayload() {
 
   } catch (err) {
     console.error("Error fetching dashboard payload:", err);
+    handleFallback(err.message);
   }
 }
 
@@ -1416,13 +1454,13 @@ async function loadAbhyasa() {
   if (!token) return;
 
   try {
-    const res = await fetch(API_BASE + "/abhyasa/stats", {
+    const res = await fetchWithTimeout(API_BASE + "/abhyasa/stats", {
       headers: { "Authorization": "Bearer " + token }
-    });
+    }, 5000);
 
     if (!res.ok) {
       console.error("Abhyasa API error:", res.status);
-      return;
+      throw new Error(`HTTP ${res.status}`);
     }
 
     const stats = await res.json();
@@ -1445,7 +1483,9 @@ async function loadAbhyasa() {
   } catch (err) {
     console.error("Error loading abhyasa stats:", err);
     const medTimeEl = document.getElementById("medTime");
-    if (medTimeEl) medTimeEl.textContent = "Error";
+    const streakEl  = document.getElementById("streak");
+    if (medTimeEl) medTimeEl.textContent = "Timeout/Error";
+    if (streakEl)  streakEl.textContent = "Data unavailable";
   }
 }
 
@@ -1457,14 +1497,14 @@ async function addMeditation(min) {
   if (btn) btn.disabled = true;
 
   try {
-    const res = await fetch(API_BASE + "/abhyasa/log", {
+    const res = await fetchWithTimeout(API_BASE + "/abhyasa/log", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token
       },
       body: JSON.stringify({ minutes: min })
-    });
+    }, 5000);
 
     if (!res.ok) {
       console.error("Log meditation API error:", res.status);
@@ -1492,12 +1532,11 @@ window.addEventListener("popstate", function () {
 
 /* ===== INIT (Wrapped in Global Auth Guard) ===== */
 document.addEventListener("DOMContentLoaded", function () {
-  requireAuth(async () => {
-    const isHealthy = await runHealthAudit();
-    if (isHealthy) {
-        fetchDashboardPayload();
-        loadAbhyasa();
-    }
+  requireAuth(() => {
+    // Run APIs concurrently without blocking each other
+    runHealthAudit().catch(e => console.error(e));
+    fetchDashboardPayload();
+    loadAbhyasa();
   });
 });
 </script>
