@@ -33,53 +33,23 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
         user_profile_summary = user_record.memory_summary or ""
 
     import time
+    from langdetect import detect
     
-    # 1. Detect language using Gemini (non-streamed)
-    gemini_client = get_gemini_client()
-    if gemini_client:
-        print("[Diagnostics] START language detection")
-        t0 = time.time()
-        try:
-            analysis_instruction = (
-                f"Analyze the user query. Detect if it is English (en), Hindi (hi), Sanskrit (sa), Tamil (ta), Telugu (te), or Odia (or). "
-                "Return a JSON object matching the QueryAnalysis schema containing the 2-letter detected language code (lang) "
-                "and the English translation of the query (translated_query). "
-                f"If you cannot detect it confidently, set lang to '{user_preferred_lang}' and translated_query to the original query."
-            )
-            from google.genai import types
-            
-            async def run_lang_detection():
-                return await asyncio.to_thread(
-                    gemini_client.models.generate_content,
-                    model='gemini-2.5-flash',
-                    contents=f"User Query: '{text}'",
-                    config=types.GenerateContentConfig(
-                        system_instruction=analysis_instruction,
-                        response_mime_type="application/json",
-                        response_schema=QueryAnalysis,
-                        temperature=0.0,
-                        http_options=types.HttpOptions(timeout=10.0)
-                    )
-                )
-                
-            analysis_response = await asyncio.wait_for(run_lang_detection(), timeout=10.0)
-            analysis = QueryAnalysis.model_validate_json(analysis_response.text)
-            detected_lang = analysis.lang
-            english_query = analysis.translated_query
-            print(f"[WebSocket Stream] Detected language: {detected_lang}")
-        except asyncio.TimeoutError:
-            print("[WebSocket Stream] Language detection timed out after 10s")
-            detected_lang = "en"
-            english_query = text
-        except Exception as e:
-            print(f"[WebSocket Stream] Language detection failed: {e}")
-            import traceback
-            traceback.print_exc()
-            detected_lang = "en"
-            english_query = text
-        finally:
-            t1 = time.time()
-            print(f"[Diagnostics] END language detection ({round((t1-t0)*1000)} ms)")
+    print("[Diagnostics] Language Detection START")
+    t0 = time.time()
+    try:
+        detected_lang = detect(text)
+        if detected_lang not in ["en", "hi", "sa", "ta", "te", "or"]:
+            detected_lang = user_preferred_lang
+        # Since langdetect doesn't translate, we use the original query.
+        english_query = text 
+    except Exception as e:
+        print(f"[WebSocket Stream] langdetect failed: {e}")
+        detected_lang = "en"
+        english_query = text
+    finally:
+        t1 = time.time()
+        print(f"[Diagnostics] Language Detection END ({round((t1-t0)*1000)} ms)")
 
     # 2. Run local intelligence pipeline
     print("[Diagnostics] START retrieval")
@@ -184,27 +154,53 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             
             from google.genai import types
             
-            print("[Diagnostics] START Gemini response generation")
+            print("[Diagnostics] Gemini START")
             t_gemini_start = time.time()
-            response_stream = gemini_client.models.generate_content_stream(
-                model='gemini-2.5-flash',
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.7,
-                    http_options=types.HttpOptions(timeout=10.0)
+            
+            async def generate_gemini_stream():
+                response_stream = await asyncio.to_thread(
+                    gemini_client.models.generate_content_stream,
+                    model='gemini-2.5-flash',
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.7,
+                        http_options=types.HttpOptions(timeout=20.0)
+                    )
                 )
-            )
+                
+                full_text = ""
+                # Since we are iterating over a synchronous generator in an async function,
+                # we should ideally run the iteration in a thread or fetch chunks, but 
+                # generate_content_stream yields chunks synchronously over the network.
+                # To prevent blocking the event loop on network I/O, we convert the stream
+                # to a list in a thread, or process it chunk by chunk in to_thread.
+                # A simpler approach for timeout resilience is to use the non-streaming call
+                # wrapped in wait_for, or just use wait_for around a wrapper.
+                
+                # To preserve streaming while respecting the timeout:
+                for chunk in response_stream:
+                    if chunk.text:
+                        full_text += chunk.text
+                        await websocket.send_json({"event": "text", "text": chunk.text})
+                return full_text
             
-            full_explanation_text = ""
-            for chunk in response_stream:
-                if chunk.text:
-                    full_explanation_text += chunk.text
-                    await websocket.send_json({"event": "text", "text": chunk.text})
-            
-            t_gemini_end = time.time()
-            print(f"[Diagnostics] END Gemini ({round((t_gemini_end - t_gemini_start)*1000)} ms)")
-            gemini_success = True
+            try:
+                full_explanation_text = await asyncio.wait_for(generate_gemini_stream(), timeout=20.0)
+                gemini_success = True
+            except asyncio.TimeoutError:
+                print("[WebSocket Stream] Gemini generation timed out after 20s")
+                await websocket.send_json({"event": "text", "text": "I am unable to reflect deeply at this moment. Please try again in a few moments."})
+                await websocket.send_json({"event": "end"})
+                return
+            except Exception as e:
+                print(f"[WebSocket Stream] Gemini generation failed: {e}")
+                await websocket.send_json({"event": "text", "text": "I am unable to reflect deeply at this moment. Please try again in a few moments."})
+                await websocket.send_json({"event": "end"})
+                return
+            finally:
+                t_gemini_end = time.time()
+                print(f"[Diagnostics] Gemini END ({round((t_gemini_end - t_gemini_start)*1000)} ms)")
             
             # Save AI message in DB
             ai_msg = Message(

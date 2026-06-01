@@ -57,6 +57,9 @@ except Exception as e:
 
 print("HEALTH ENDPOINT READY")
 
+gemini_key = os.getenv("GEMINI_API_KEY")
+print(f"GEMINI_API_KEY PRESENT = {'YES' if gemini_key else 'NO'}")
+
 
 # =====================================
 # CORS & Rate Limiting Middleware
