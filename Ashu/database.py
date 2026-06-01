@@ -22,24 +22,44 @@ if DATABASE_URL:
 else:
     DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'gita_ai.db')}"
 
+# =====================================
+# STARTUP DIAGNOSTICS
+# =====================================
+print("APP STARTED")
+masked_url = DATABASE_URL
+if "://" in DATABASE_URL and "@" in DATABASE_URL:
+    try:
+        prefix = DATABASE_URL.split("://")[0]
+        rest = DATABASE_URL.split("://")[1]
+        user_pass = rest.split("@")[0]
+        host_db = rest.split("@")[1]
+        user = user_pass.split(":")[0]
+        masked_url = f"{prefix}://{user}:***@{host_db}"
+    except Exception:
+        masked_url = "MASKED_URL_ERROR"
 
+print(f"DATABASE URL LOADED: {masked_url}")
+print(f"POSTGRES CONNECTED: {'YES' if 'postgres' in masked_url else 'NO'}")
 
 # =====================================
 # Engine Configuration
 # =====================================
 
 is_sqlite = DATABASE_URL.startswith("sqlite")
-connect_args = {"check_same_thread": False, "timeout": 30} if is_sqlite else {}
+connect_args = {"check_same_thread": False, "timeout": 30} if is_sqlite else {"connect_timeout": 3}
 pool_kwargs = {} if is_sqlite else {"pool_size": 100, "max_overflow": 50}
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    pool_pre_ping=True,   # Avoid stale connections
-    echo=False,           # Set True only for debugging
-    **pool_kwargs
-)
-
+try:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args=connect_args,
+        pool_pre_ping=True,   # Avoid stale connections
+        echo=False,           # Set True only for debugging
+        **pool_kwargs
+    )
+    print(f"ENGINE DIALECT: {engine.dialect.name}")
+except Exception as e:
+    print(f"ENGINE CREATION FAILED: {e}")
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):

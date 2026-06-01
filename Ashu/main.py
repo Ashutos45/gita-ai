@@ -47,8 +47,15 @@ app = FastAPI(
 # Create Tables
 # =====================================
 
-Base.metadata.create_all(bind=engine)
-check_and_run_migrations()
+try:
+    print("ATTEMPTING DB CONNECTION...")
+    Base.metadata.create_all(bind=engine)
+    check_and_run_migrations()
+    print("POSTGRES CONNECTED SUCCESSFULLY")
+except Exception as e:
+    print(f"CRITICAL DATABASE STARTUP ERROR: {e}")
+
+print("HEALTH ENDPOINT READY")
 
 
 # =====================================
