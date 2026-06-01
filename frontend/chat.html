@@ -723,7 +723,20 @@ async function ask(){
   ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       
-      if (data.type === "verse_data") {
+      if (data.error) {
+          console.error("Server Error:", data.error);
+          if (data.error.includes("Unauthorized") || data.error.includes("User not found")) {
+              logout();
+              return;
+          }
+          const ti = document.getElementById("typingIndicator");
+          if (ti) ti.remove();
+          krishna.classList.remove("active");
+          addAIMessage("⚠ " + data.error);
+          return;
+      }
+      
+      if (data.event === "verse" || data.type === "verse_data") {
           const ti = document.getElementById("typingIndicator");
           if (ti) ti.remove();
           
@@ -736,13 +749,13 @@ async function ask(){
               if (voiceCircle) voiceCircle.style.animation = "pulse 1.6s infinite";
           }
           
-      } else if (data.type === "chunk") {
+      } else if (data.event === "text" || data.type === "chunk") {
           if (currentAIMsgDiv) {
               streamedHTML += data.text;
-              currentAIMsgDiv.innerHTML = streamedHTML;
+              currentAIMsgDiv.innerHTML = marked.parse(streamedHTML);
               chat.scrollTop = chat.scrollHeight;
           }
-      } else if (data.type === "end") {
+      } else if (data.event === "end" || data.type === "end") {
           setTimeout(() => krishna.classList.remove("active"), 1000);
           saveMessage(currentChat, "ai", streamedHTML);
           
@@ -771,6 +784,17 @@ async function ask(){
       // Re-trigger the same question using HTTP Fallback
       fallbackToHTTP(userText);
   };
+  
+  ws.onclose = (event) => {
+      if (event.code === 4003 || event.code === 4001) {
+          console.error("Server explicitly closed connection due to auth/config failure.");
+          const ti = document.getElementById("typingIndicator");
+          if (ti) ti.remove();
+          krishna.classList.remove("active");
+          // Re-trigger the same question using HTTP Fallback which will catch the 401 and handle it
+          fallbackToHTTP(userText);
+      }
+  };
 }
 
 async function fallbackToHTTP(text) {
@@ -793,6 +817,7 @@ async function fallbackToHTTP(text) {
       if (ti) ti.remove();
       krishna.classList.remove("active");
       
+      if (res.status === 401) throw new Error("401 Unauthorized");
       if (!res.ok) throw new Error("HTTP fallback failed");
       const data = await res.json();
       
@@ -810,6 +835,10 @@ async function fallbackToHTTP(text) {
       saveMessage(currentChat, "ai", html);
   } catch (err) {
       console.error(err);
+      if (err.message.includes("401")) {
+          logout();
+          return;
+      }
       const ti = document.getElementById("typingIndicator");
       if (ti) ti.remove();
       krishna.classList.remove("active");
