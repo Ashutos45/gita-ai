@@ -6,7 +6,7 @@ import random
 
 from Ashu.database import SessionLocal
 from Ashu.models import User, WellnessAssessment, AbhyasaLog, Message, Verse
-from Ashu.auth_utils import verify_token
+from Ashu.auth import get_current_user
 from pydantic import BaseModel
 
 router = APIRouter(tags=["dashboard"])
@@ -28,9 +28,9 @@ WISDOM_POOL = [
 ]
 
 @router.get("/dashboard/payload")
-def get_dashboard_payload(db: Session = Depends(get_db), token_data: dict = Depends(verify_token)):
-    user_id = token_data.get("user_id")
-    user = db.query(User).filter(User.id == user_id).first()
+def get_dashboard_payload(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = current_user.id
+    user = current_user
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
