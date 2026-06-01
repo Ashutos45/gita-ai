@@ -7,7 +7,8 @@ from sqlalchemy import (
     Text,
     Float,
     UniqueConstraint,
-    Index
+    Index,
+    Boolean
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -53,6 +54,18 @@ class User(Base):
 
     abhyasa_logs = relationship(
         "AbhyasaLog",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    daily_checkins = relationship(
+        "DailyCheckin",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    favorite_verses = relationship(
+        "FavoriteVerse",
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -255,7 +268,54 @@ class AbhyasaLog(Base):
         index=True
     )
     meditation_minutes = Column(Integer, nullable=False)
+    read_gita = Column(Boolean, nullable=False, default=False)
+    reflection_done = Column(Boolean, nullable=False, default=False)
+    self_control_practiced = Column(Boolean, nullable=False, default=False)
     streak_count = Column(Integer, nullable=False, default=0)
     logged_date = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user = relationship("User", back_populates="abhyasa_logs")
+
+
+# ==========================
+# Daily Checkin Model (Mood Tracker)
+# ==========================
+
+class DailyCheckin(Base):
+    __tablename__ = "daily_checkins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    mood = Column(String(50), nullable=False)  # Happy, Calm, Anxious, Sad, Frustrated
+    notes = Column(Text, nullable=True)
+    logged_date = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User", back_populates="daily_checkins")
+
+
+# ==========================
+# Favorite Verse Model
+# ==========================
+
+class FavoriteVerse(Base):
+    __tablename__ = "favorite_verses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    verse_id = Column(String(50), nullable=False) # e.g. "BG 2.47"
+    sanskrit = Column(Text, nullable=True)
+    translation = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    saved_date = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User", back_populates="favorite_verses")

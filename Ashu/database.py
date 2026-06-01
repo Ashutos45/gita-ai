@@ -131,3 +131,28 @@ def check_and_run_migrations():
                 if "memory_summary" not in u_columns:
                     conn.execute(text("ALTER TABLE users ADD COLUMN memory_summary TEXT"))
             print("Database migration for 'users' completed successfully.")
+
+    if "abhyasa_logs" in inspector.get_table_names():
+        a_columns = [col["name"] for col in inspector.get_columns("abhyasa_logs")]
+        missing_a_columns = []
+        if "read_gita" not in a_columns:
+            missing_a_columns.append("read_gita")
+        if "reflection_done" not in a_columns:
+            missing_a_columns.append("reflection_done")
+        if "self_control_practiced" not in a_columns:
+            missing_a_columns.append("self_control_practiced")
+            
+        if missing_a_columns:
+            print(f"Database migration needed. Missing columns in 'abhyasa_logs': {missing_a_columns}")
+            with engine.begin() as conn:
+                if "read_gita" not in a_columns:
+                    # SQLite uses integer 0/1 for boolean, Postgres uses boolean.
+                    # Using INTEGER DEFAULT 0 is compatible with both for truthiness,
+                    # but since SQLAlchemy maps Boolean to BOOLEAN in Postgres, let's use BOOLEAN.
+                    # In SQLite, BOOLEAN is just an alias.
+                    conn.execute(text("ALTER TABLE abhyasa_logs ADD COLUMN read_gita BOOLEAN DEFAULT FALSE"))
+                if "reflection_done" not in a_columns:
+                    conn.execute(text("ALTER TABLE abhyasa_logs ADD COLUMN reflection_done BOOLEAN DEFAULT FALSE"))
+                if "self_control_practiced" not in a_columns:
+                    conn.execute(text("ALTER TABLE abhyasa_logs ADD COLUMN self_control_practiced BOOLEAN DEFAULT FALSE"))
+            print("Database migration for 'abhyasa_logs' completed successfully.")

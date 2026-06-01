@@ -94,12 +94,18 @@ class WellnessAssessmentResponse(BaseModel):
 # =========================
 
 class AbhyasaLogCreate(BaseModel):
-    minutes: int
+    minutes: int = 0
+    read_gita: bool = False
+    reflection_done: bool = False
+    self_control_practiced: bool = False
 
 
 class AbhyasaLogResponse(BaseModel):
     id: int
     meditation_minutes: int
+    read_gita: bool
+    reflection_done: bool
+    self_control_practiced: bool
     streak_count: int
     logged_date: datetime
 
@@ -110,3 +116,6 @@ class AbhyasaLogResponse(BaseModel):
 class AbhyasaStatsResponse(BaseModel):
     meditation: int
     streak: int
+    read_gita_days: int
+    reflection_days: int
+    self_control_days: int

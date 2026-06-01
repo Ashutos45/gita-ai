@@ -58,6 +58,9 @@ def log_meditation(
     new_log = AbhyasaLog(
         user_id=current_user.id,
         meditation_minutes=log.minutes,
+        read_gita=log.read_gita,
+        reflection_done=log.reflection_done,
+        self_control_practiced=log.self_control_practiced,
         streak_count=streak
     )
     
@@ -104,8 +107,22 @@ def get_meditation_stats(
         ).all()
         
         meditation_today = sum(l.meditation_minutes for l in logs_today)
+        
+    # Get total 30 day stats for the habit circles
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_logs = db.query(AbhyasaLog).filter(
+        AbhyasaLog.user_id == current_user.id,
+        AbhyasaLog.logged_date >= thirty_days_ago
+    ).all()
+    
+    read_gita_days = sum(1 for l in recent_logs if l.read_gita)
+    reflection_days = sum(1 for l in recent_logs if l.reflection_done)
+    self_control_days = sum(1 for l in recent_logs if l.self_control_practiced)
 
     return {
         "meditation": meditation_today,
-        "streak": streak
+        "streak": streak,
+        "read_gita_days": read_gita_days,
+        "reflection_days": reflection_days,
+        "self_control_days": self_control_days
     }

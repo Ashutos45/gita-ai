@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import random
 
 from Ashu.database import SessionLocal
-from Ashu.models import User, WellnessAssessment, AbhyasaLog, Message, Verse
+from Ashu.models import User, WellnessAssessment, AbhyasaLog, Message, Verse, DailyCheckin, FavoriteVerse
 from Ashu.auth import get_current_user
 from pydantic import BaseModel
 
@@ -26,6 +26,16 @@ WISDOM_POOL = [
     {"verse": "BG 3.19", "sanskrit": "तस्मादसक्तः सततं कार्यं कर्म समाचर।", "insight": "Perform your duty without attachment. This is the path to supreme peace."},
     {"verse": "BG 6.6", "sanskrit": "बन्धुरात्मात्मनस्तस्य येनात्मैवात्मना जितः।", "insight": "For one who has conquered the mind, the mind is the best of friends."}
 ]
+
+class CheckinRequest(BaseModel):
+    mood: str
+    notes: str = ""
+
+class FavoriteRequest(BaseModel):
+    verse_id: str
+    sanskrit: str = ""
+    translation: str = ""
+    notes: str = ""
 
 @router.get("/dashboard/payload")
 def get_dashboard_payload(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -60,8 +70,11 @@ def get_dashboard_payload(current_user: User = Depends(get_current_user), db: Se
         db.commit()
 
     # Generate AI Insight
-    insight = "Begin your journey by taking an assessment or meditating."
-    if latest_stress and total_assessments > 3:
+    insight = "Begin your journey by meditating or reflecting."
+    if user.memory_summary:
+        # Simplistic extraction of memory summary for insight
+        insight = f"Krishna notices: {user.memory_summary[:100]}..."
+    elif latest_stress and total_assessments > 3:
         insight = "You've been consistent. Maintain your inner stillness."
     elif latest_stress and latest_stress.level == "High":
         insight = "I sense turbulence. Pause and ground yourself today."
@@ -81,21 +94,45 @@ def get_dashboard_payload(current_user: User = Depends(get_current_user), db: Se
             print("Timezone error:", e)
             needs_assessment = False
 
-    # Mock Trend Data for Chart.js
-    # In production, we would group by date and average the score.
-    # We will generate a realistic looking 7-day trend array based on the latest score.
-    trend_data = [50, 45, 60, 55, 40, 35, 30] # default
-    if latest_stress:
-        base = latest_stress.score
-        trend_data = [max(10, min(100, base + random.randint(-15, 15))) for _ in range(7)]
-        trend_data[-1] = base # current day is exact
+    # Inner State Analytics (0-100)
+    # Base it off assessments, defaulting to a baseline if none exist.
+    state_stress = 100 - latest_stress.score if latest_stress else 50
+    state_focus = 50 + (streak * 2)
+    state_relationships = latest_rel.score if latest_rel else 50
+    state_confidence = 50 + (level * 2)
+    state_discipline = min(100, total_abhyasa * 5)
+    
+    inner_state = {
+        "stress": max(10, min(100, state_stress)),
+        "focus": max(10, min(100, state_focus)),
+        "relationships": max(10, min(100, state_relationships)),
+        "confidence": max(10, min(100, state_confidence)),
+        "discipline": max(10, min(100, state_discipline))
+    }
 
     # Achievements
     achievements = []
-    if total_assessments > 0: achievements.append("First Assessment")
-    if total_abhyasa > 0: achievements.append("First Reflection")
-    if streak >= 7: achievements.append("7 Day Streak")
+    if total_assessments > 0: achievements.append({"title": "First Assessment", "icon": "🌱"})
+    if total_abhyasa > 0: achievements.append({"title": "First Reflection", "icon": "🧘"})
+    if streak >= 7: achievements.append({"title": "7 Day Streak", "icon": "🔥"})
+    if total_abhyasa >= 10: achievements.append({"title": "Meditation Master", "icon": "🕉️"})
+    if latest_stress and latest_stress.level == "Low": achievements.append({"title": "Conquered Anxiety", "icon": "⚔️"})
     
+    # Timeline
+    timeline = []
+    first_msg = db.query(Message).filter(Message.user_id == user_id).order_by(Message.timestamp.asc()).first()
+    if first_msg:
+        timeline.append({"title": "First Conversation", "date": first_msg.timestamp.strftime("%Y-%m-%d")})
+    if latest_stress:
+        timeline.append({"title": "Latest Assessment", "date": latest_stress.taken_at.strftime("%Y-%m-%d")})
+    if total_abhyasa > 0:
+        last_abhyasa = db.query(AbhyasaLog).filter(AbhyasaLog.user_id == user_id).order_by(AbhyasaLog.logged_date.desc()).first()
+        if last_abhyasa:
+            timeline.append({"title": "Latest Practice", "date": last_abhyasa.logged_date.strftime("%Y-%m-%d")})
+            
+    # Sort timeline by date string (simple sort)
+    timeline.sort(key=lambda x: x["date"], reverse=True)
+
     wisdom = random.choice(WISDOM_POOL)
     
     return {
@@ -108,15 +145,38 @@ def get_dashboard_payload(current_user: User = Depends(get_current_user), db: Se
         },
         "wisdom": wisdom,
         "insight": insight,
+        "inner_state": inner_state,
+        "timeline": timeline,
         "assessment": {
             "needs_reminder": needs_assessment,
-            "days_since": days_since_assessment,
             "latest_stress": latest_stress.level if latest_stress else "None",
             "latest_decision": latest_decision.level if latest_decision else "None",
             "latest_relationships": latest_rel.level if latest_rel else "None"
-        },
-        "trends": {
-            "labels": ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5", "Day 6", "Today"],
-            "stress_scores": trend_data
         }
     }
+
+
+@router.post("/dashboard/checkin")
+def post_daily_checkin(req: CheckinRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    checkin = DailyCheckin(user_id=current_user.id, mood=req.mood, notes=req.notes)
+    db.add(checkin)
+    db.commit()
+    return {"status": "success", "mood": req.mood}
+
+@router.get("/dashboard/favorites")
+def get_favorites(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    favs = db.query(FavoriteVerse).filter(FavoriteVerse.user_id == current_user.id).order_by(FavoriteVerse.saved_date.desc()).all()
+    return [{"verse_id": f.verse_id, "sanskrit": f.sanskrit, "translation": f.translation, "notes": f.notes} for f in favs]
+
+@router.post("/dashboard/favorites")
+def add_favorite(req: FavoriteRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    fav = FavoriteVerse(
+        user_id=current_user.id,
+        verse_id=req.verse_id,
+        sanskrit=req.sanskrit,
+        translation=req.translation,
+        notes=req.notes
+    )
+    db.add(fav)
+    db.commit()
+    return {"status": "success"}
