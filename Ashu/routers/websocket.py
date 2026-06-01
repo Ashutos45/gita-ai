@@ -32,9 +32,13 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
         user_preferred_lang = user_record.preferred_language or "en"
         user_profile_summary = user_record.memory_summary or ""
 
+    import time
+    
     # 1. Detect language using Gemini (non-streamed)
     gemini_client = get_gemini_client()
     if gemini_client:
+        print("[Diagnostics] START language detection")
+        t0 = time.time()
         try:
             analysis_instruction = (
                 f"Analyze the user query. Detect if it is English (en), Hindi (hi), Sanskrit (sa), Tamil (ta), Telugu (te), or Odia (or). "
@@ -43,33 +47,51 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
                 f"If you cannot detect it confidently, set lang to '{user_preferred_lang}' and translated_query to the original query."
             )
             from google.genai import types
-            analysis_response = await asyncio.to_thread(
-                gemini_client.models.generate_content,
-                model='gemini-2.5-flash',
-                contents=f"User Query: '{text}'",
-                config=types.GenerateContentConfig(
-                    system_instruction=analysis_instruction,
-                    response_mime_type="application/json",
-                    response_schema=QueryAnalysis,
-                    temperature=0.0,
-                    http_options=types.HttpOptions(timeout=4.0)
+            
+            async def run_lang_detection():
+                return await asyncio.to_thread(
+                    gemini_client.models.generate_content,
+                    model='gemini-2.5-flash',
+                    contents=f"User Query: '{text}'",
+                    config=types.GenerateContentConfig(
+                        system_instruction=analysis_instruction,
+                        response_mime_type="application/json",
+                        response_schema=QueryAnalysis,
+                        temperature=0.0,
+                        http_options=types.HttpOptions(timeout=10.0)
+                    )
                 )
-            )
+                
+            analysis_response = await asyncio.wait_for(run_lang_detection(), timeout=10.0)
             analysis = QueryAnalysis.model_validate_json(analysis_response.text)
             detected_lang = analysis.lang
             english_query = analysis.translated_query
             print(f"[WebSocket Stream] Detected language: {detected_lang}")
+        except asyncio.TimeoutError:
+            print("[WebSocket Stream] Language detection timed out after 10s")
+            detected_lang = "en"
+            english_query = text
         except Exception as e:
-            print("[WebSocket Stream] Language detection failed:", e)
-            detected_lang = user_preferred_lang
+            print(f"[WebSocket Stream] Language detection failed: {e}")
+            import traceback
+            traceback.print_exc()
+            detected_lang = "en"
+            english_query = text
+        finally:
+            t1 = time.time()
+            print(f"[Diagnostics] END language detection ({round((t1-t0)*1000)} ms)")
 
     # 2. Run local intelligence pipeline
+    print("[Diagnostics] START retrieval")
+    t2 = time.time()
     result = await asyncio.to_thread(gita_pipeline, english_query)
     intent = result.get("intent")
     emotion = result.get("emotion")
     intensity = result.get("intensity", 0.5)
     verse = result.get("verse")
     addiction_flag = result.get("theme") == "self_control"
+    t3 = time.time()
+    print(f"[Diagnostics] END retrieval ({round((t3-t2)*1000)} ms)")
 
     if intent == "greeting":
         from ai.ai.response_builder import build_response
@@ -161,6 +183,9 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             """
             
             from google.genai import types
+            
+            print("[Diagnostics] START Gemini response generation")
+            t_gemini_start = time.time()
             response_stream = gemini_client.models.generate_content_stream(
                 model='gemini-2.5-flash',
                 contents=contents,
@@ -177,6 +202,8 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
                     full_explanation_text += chunk.text
                     await websocket.send_json({"event": "text", "text": chunk.text})
             
+            t_gemini_end = time.time()
+            print(f"[Diagnostics] END Gemini ({round((t_gemini_end - t_gemini_start)*1000)} ms)")
             gemini_success = True
             
             # Save AI message in DB
