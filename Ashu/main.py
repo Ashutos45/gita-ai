@@ -79,7 +79,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Exclude static assets and health checks from rate limiting
         path = request.url.path
         if path.startswith("/app") or path in ["/", "/health"]:
-            return await call_next(request)
+            response = await call_next(request)
+            if path.endswith(".html"):
+                response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            return response
 
         client_ip = request.client.host if request.client else "unknown"
         now = time.time()
@@ -99,14 +104,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 # Register rate limiter
 app.add_middleware(RateLimitMiddleware, limit=60, window=60)
 
-if ENVIRONMENT == "development":
-    allowed_origins = ["*"]
-else:
-    origins_env = os.getenv("ALLOWED_ORIGINS")
-    if origins_env:
-        allowed_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
-    else:
-        allowed_origins = ["https://yourfrontend.com"]
+# Allow all origins to prevent WebSocket 403s on Railway
+allowed_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
