@@ -277,10 +277,9 @@ async function loginUser(){
     localStorage.setItem("gitaUser", email);
     window.location.replace("dashboard.html");
   } else {
-
     // ✅ DIRECT REDIRECT (NO POPUP)
     window.location.href = "dashboard.html";
-
+  }
   }catch(error){
     alert("Server not reachable");
     console.error(error);

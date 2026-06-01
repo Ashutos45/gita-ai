@@ -348,7 +348,14 @@ message=JSON.stringify(result.detail);
 
 }
 
-showPopup(message,"error");
+if (message === "Email already registered") {
+    showPopup("Email already registered. Redirecting to Login...", "error");
+    setTimeout(() => {
+        window.location.href = "signin.html";
+    }, 2000);
+} else {
+    showPopup(message, "error");
+}
 
 }
 

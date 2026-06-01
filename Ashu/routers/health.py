@@ -40,8 +40,8 @@ def health_dashboard(current_user: User = Depends(get_current_user), db: Session
         db.query(WellnessAssessment).first()
         
         # Test 3: Abhyasa API dependencies (check table access)
-        from Ashu.models import AbhyasaStats
-        db.query(AbhyasaStats).first()
+        from Ashu.models import AbhyasaLog
+        db.query(AbhyasaLog).first()
         
     except Exception as e:
         status["overall_status"] = "FAIL"
