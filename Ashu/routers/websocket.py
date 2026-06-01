@@ -226,14 +226,48 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
     await websocket.send_json({"event": "end"})
 
 
+from pydantic import BaseModel
+class ChatMessage(BaseModel):
+    text: str
+
+@router.post("/send")
+async def chat_send_fallback(message: ChatMessage, token: str):
+    print(f"[HTTP Fallback] Received message. Token: {token[:10]}...")
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
+    user_id = payload.get("user_id")
+    db = SessionLocal()
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        db.close()
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    # We create a dummy websocket-like object to catch the send_json calls
+    class DummyWebSocket:
+        def __init__(self):
+            self.responses = []
+        async def send_json(self, data):
+            self.responses.append(data)
+            
+    dummy_ws = DummyWebSocket()
+    await stream_krishna_reply(dummy_ws, message.text, user.id, db)
+    db.close()
+    
+    return {"responses": dummy_ws.responses}
+
 @router.websocket("/ws")
 async def chat_websocket(websocket: WebSocket):
+    print("[WebSocket] Connection attempt received at /ws")
     await websocket.accept()
+    print("[WebSocket] Connection accepted")
     db = SessionLocal()
     user = None
     try:
         # Authentication
         token = websocket.query_params.get("token")
+        print(f"[WebSocket] Token from query: {'Yes' if token else 'No'}")
         if not token:
             data = await websocket.receive_text()
             try:
@@ -249,6 +283,7 @@ async def chat_websocket(websocket: WebSocket):
             return
 
         payload = verify_token(token)
+        print(f"[WebSocket] Token decoded successfully: {'Yes' if payload else 'No'}")
         if not payload:
             await websocket.send_json({"error": "Unauthorized: Invalid token"})
             await websocket.close(code=4003)
@@ -256,6 +291,7 @@ async def chat_websocket(websocket: WebSocket):
 
         user_id = payload.get("user_id")
         user = db.query(User).filter(User.id == user_id).first()
+        print(f"[WebSocket] User resolved: {user.full_name if user else 'No'}")
         if not user:
             await websocket.send_json({"error": "Unauthorized: User not found"})
             await websocket.close(code=4003)

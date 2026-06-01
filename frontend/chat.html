@@ -672,6 +672,7 @@ async function ensureLogin() {
 let ws = null;
 let currentAIMsgDiv = null;
 let streamedHTML = "";
+let useWebSocket = true;
 
 async function ask(){
   const q = document.getElementById("q");
@@ -693,8 +694,14 @@ async function ask(){
 
   krishna.classList.add("active");
 
+  if (!useWebSocket) {
+      fallbackToHTTP(userText);
+      return;
+  }
+
   // Open WebSocket connection
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  console.log("[WebSocket] Connecting to", `${protocol}//${window.location.host}/chat/ws`);
   const wsUrl = `${protocol}//${window.location.host}/chat/ws?token=${getAccessToken()}`;
   
   ws = new WebSocket(wsUrl);
@@ -754,13 +761,60 @@ async function ask(){
   };
   
   ws.onerror = (err) => {
-      console.error("WebSocket error", err);
+      console.error("[WebSocket] Connection failed. Falling back to HTTP.", err);
       const ti = document.getElementById("typingIndicator");
       if (ti) ti.remove();
-      addAIMessage("⚠ Connection to wisdom failed. Try again.");
-      if (liveMode && voiceStatus) voiceStatus.innerText = "Error connected. Try again.";
+      
+      useWebSocket = false;
       ws.close();
+      
+      // Re-trigger the same question using HTTP Fallback
+      fallbackToHTTP(userText);
   };
+}
+
+async function fallbackToHTTP(text) {
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.id = "typingIndicator";
+  typing.innerText = "Krishna is reflecting…";
+  chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
+  krishna.classList.add("active");
+
+  try {
+      const res = await fetch("/chat/send?token=" + getAccessToken(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text })
+      });
+      
+      const ti = document.getElementById("typingIndicator");
+      if (ti) ti.remove();
+      krishna.classList.remove("active");
+      
+      if (!res.ok) throw new Error("HTTP fallback failed");
+      const data = await res.json();
+      
+      let html = "";
+      for (const msg of data.responses) {
+          if (msg.event === "verse" && msg.sanskrit) {
+              html += `<div class="verse-card"><div class="sanskrit">${msg.sanskrit}</div><div class="meaning">${msg.meaning}</div></div>`;
+          }
+          if (msg.event === "text") {
+              html += marked.parse(msg.text);
+          }
+      }
+      
+      addAIMessage(html);
+      saveMessage(currentChat, "ai", html);
+  } catch (err) {
+      console.error(err);
+      const ti = document.getElementById("typingIndicator");
+      if (ti) ti.remove();
+      krishna.classList.remove("active");
+      addAIMessage("⚠ Connection to wisdom failed. Both WebSockets and HTTP routes are unreachable.");
+  }
 }
 </script>
 
