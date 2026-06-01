@@ -57,3 +57,28 @@ def health_dashboard(current_user: User = Depends(get_current_user), db: Session
             status["abhyasa_api"] = "FAIL"
 
     return status
+
+@router.get("/health/database")
+def health_database(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "message": "Database connection successful"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/health/models")
+def health_models(db: Session = Depends(get_db)):
+    try:
+        from sqlalchemy import inspect
+        from Ashu.database import engine
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        
+        table_columns = {}
+        for table in tables:
+            columns = [col["name"] for col in inspector.get_columns(table)]
+            table_columns[table] = columns
+            
+        return {"status": "ok", "tables": table_columns}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

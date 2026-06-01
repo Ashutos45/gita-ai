@@ -1,0 +1,34 @@
+services:
+  # Postgres Database
+  - type: psql
+    name: gitaai-db
+    plan: free # or starter
+    region: ohio # Customize if needed
+
+  # FastAPI Web Service
+  - type: web
+    name: gitaai-backend
+    env: docker
+    region: ohio
+    plan: free # or starter
+    
+    envVars:
+      # Inject DB URL directly from the managed Postgres service
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gitaai-db
+          property: connectionString
+      
+      # The rest must be configured manually in the Render UI
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: ALGORITHM
+        value: "HS256"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: ENV
+        value: "production"
+      - key: ALLOWED_ORIGINS
+        value: "*"
