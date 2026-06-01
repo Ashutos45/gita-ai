@@ -1314,7 +1314,8 @@ async function fetchDashboardPayload() {
   };
 
   try {
-    const res = await fetchWithTimeout(API_BASE + "/dashboard/payload", {
+    // Append token as query param to support older backend deployments
+    const res = await fetchWithTimeout(API_BASE + `/dashboard/payload?token=${token}`, {
       headers: { "Authorization": "Bearer " + token }
     }, 5000);
 
