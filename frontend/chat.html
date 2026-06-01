@@ -695,7 +695,7 @@ async function ask(){
 
   // Open WebSocket connection
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${protocol}//${window.location.host}/chat/stream?token=${getAccessToken()}`;
+  const wsUrl = `${protocol}//${window.location.host}/chat/ws?token=${getAccessToken()}`;
   
   ws = new WebSocket(wsUrl);
   streamedHTML = "";
@@ -1137,9 +1137,9 @@ function openChatMenu(e, chatId){
   }
 }
 function toggleVoiceUI(){
-  // Open WebSocket connection
+  // Open Voice WebSocket Connection
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${protocol}//${window.location.host}/chat/stream?token=${getAccessToken()}`;
+  const wsUrl = `${protocol}//${window.location.host}/chat/live?token=${getAccessToken()}`;
   liveMode = !liveMode;
 
   const btn = document.getElementById("voiceToggle");
