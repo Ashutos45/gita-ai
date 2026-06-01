@@ -57,6 +57,11 @@ except Exception as e:
 
 print("HEALTH ENDPOINT READY")
 
+import uuid
+APP_INSTANCE_ID = str(uuid.uuid4())[:8]
+PROCESS_PID = os.getpid()
+print(f"APP_INSTANCE_ID={APP_INSTANCE_ID} PROCESS_PID={PROCESS_PID}")
+
 gemini_key = os.getenv("GEMINI_API_KEY")
 print(f"GEMINI_API_KEY PRESENT = {'YES' if gemini_key else 'NO'}")
 

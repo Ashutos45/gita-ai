@@ -153,8 +153,12 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             """
             
             from google.genai import types
+            import psutil
             
-            print("[Diagnostics] Gemini START")
+            rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+            print(f"[Diagnostics] RAM Usage (Before Gemini): {rss_mb:.2f} MB")
+            
+            print("[PIPELINE] GEMINI START")
             t_gemini_start = time.time()
             
             async def generate_gemini_stream():
@@ -201,22 +205,23 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             finally:
                 t_gemini_end = time.time()
                 print(f"[Diagnostics] Gemini END ({round((t_gemini_end - t_gemini_start)*1000)} ms)")
+                print("[PIPELINE] GEMINI COMPLETE")
             
             # Save AI message in DB
             ai_msg = Message(
                 user_id=user_id,
-                sender="ai",
+                role="ai",
                 text=full_explanation_text,
-                emotion=emotion,
-                emotion_intensity=intensity,
-                chapter=verse.get("chapter"),
-                verse_number=verse.get("verse_number"),
-                verse_id=verse.get("id")
+                chapter=verse["chapter"] if verse else None,
+                verse_number=verse["verse_number"] if verse else None,
+                verse_id=verse["id"] if (verse and "id" in verse) else None
             )
             db.add(ai_msg)
-            try:
-                db.commit()
-            except Exception as e:
+            db.commit()
+
+            await websocket.send_json({"event": "end"})
+            print("[PIPELINE] RESPONSE SENT")
+        except Exception as e:
                 db.rollback()
                 print("[Database Error] Failed to save AI socket message:", e)
 
@@ -314,7 +319,10 @@ async def chat_websocket(websocket: WebSocket):
 
         user_id = payload.get("user_id")
         user = db.query(User).filter(User.id == user_id).first()
-        print(f"[WebSocket] User resolved: {user.full_name if user else 'No'}")
+        from Ashu.main import APP_INSTANCE_ID, PROCESS_PID
+        print(f"--- NEW CHAT REQUEST ---")
+        print(f"APP_INSTANCE_ID={APP_INSTANCE_ID} PROCESS_PID={PROCESS_PID} NEW_PID={os.getpid()}")
+        print(f"[WebSocket] User resolved: {'Yes' if user_id else 'No'}")
         if not user:
             await websocket.send_json({"error": "Unauthorized: User not found"})
             await websocket.close(code=4003)

@@ -91,32 +91,29 @@ def predict_emotion(text: str) -> dict:
 
     text_clean = _normalize(text)
 
-    # Trigger lazy load
-    model.load_model_lazy()
-
-    import torch
-    import torch.nn.functional as F
-
-    # -------- Model Prediction --------
-    inputs = model.tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        padding=True,
-        max_length=96
-    )
-
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
-
-    with torch.no_grad():
-        outputs = model.emotion_model(**inputs)
-        logits = outputs.logits
-        probabilities = F.softmax(logits, dim=-1)[0]
-
-    model_scores = {
-        model.id2label[i].strip().lower(): float(probabilities[i])
-        for i in range(len(probabilities))
-    }
+    try:
+        # BYPASS DISTILBERT TEMPORARILY TO PREVENT OOM RESTARTS
+        # model.load_model_lazy()
+        # import torch
+        # import torch.nn.functional as F
+        
+        model_scores = {
+            "anger": 0.0,
+            "fear": 0.0,
+            "sadness": 0.0,
+            "stress": 0.0,
+            "confusion": 0.0,
+            "joy": 0.0,
+            "neutral": 0.0,
+            "desire": 0.0,
+            "attachment": 0.0,
+            "hopelessness": 0.0
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[Diagnostics] Emotion model loading failed: {e}")
+        return {"emotion": "anxiety", "confidence": 0.5}
 
     # -------- Keyword Boost --------
     _keyword_boost(text_clean, model_scores)

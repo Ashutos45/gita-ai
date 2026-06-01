@@ -262,13 +262,36 @@ def gita_pipeline(text: str):
     # AI CLASSIFICATION
     # =====================================
 
+    import psutil
+    import traceback
+    
+    print("[PIPELINE] START")
+
     intent = detect_intent(text)
 
-    emotion_result = predict_emotion(text)
+    # Memory Check before Emotion
+    mem_percent = psutil.virtual_memory().percent
+    rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+    print(f"[Diagnostics] RAM Usage (Before Emotion): {rss_mb:.2f} MB ({mem_percent}%)")
+
+    emotion_result = {"emotion": "confusion", "confidence": 0.5}
+    try:
+        if mem_percent > 80:
+            print("[Diagnostics] RAM exceeds 80%. Skipping DistilBERT emotion classifier.")
+            emotion_result = {"emotion": "anxiety", "confidence": 0.5}
+        else:
+            emotion_result = predict_emotion(text)
+    except Exception as e:
+        print(f"[Diagnostics] Emotion classification failed: {e}")
+        traceback.print_exc()
+        emotion_result = {"emotion": "anxiety", "confidence": 0.5}
 
     emotion = emotion_result.get("emotion", "confusion").strip().lower()
-
     confidence = round(float(emotion_result.get("confidence", 0.5)), 3)
+    
+    rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+    print(f"[Diagnostics] RAM Usage (After Emotion): {rss_mb:.2f} MB")
+    print("[PIPELINE] EMOTION COMPLETE")
 
 
     # =====================================
@@ -351,39 +374,46 @@ def gita_pipeline(text: str):
     # SEMANTIC SEARCH
     # =====================================
 
-    semantic_query = f"{text} bhagavad gita {emotion} guidance"
+    rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+    print(f"[Diagnostics] RAM Usage (Before Retrieval): {rss_mb:.2f} MB")
 
-    semantic_results = search(semantic_query, top_k=5) or []
+    semantic_query = f"{text} bhagavad gita {emotion} guidance"
+    semantic_results = []
+    
+    try:
+        semantic_results = search(semantic_query, top_k=5) or []
+    except Exception as e:
+        print(f"[Diagnostics] Semantic search failed: {e}")
+        traceback.print_exc()
 
     verse = None
     best_score = 0.0
 
     if semantic_results:
-
         for result in semantic_results:
-
             score = float(result["score"])
-
             if score > best_score:
                 best_score = score
                 verse = result
-
 
     # =====================================
     # FALLBACK
     # =====================================
 
     if verse is None:
-
         fallback_query = f"bhagavad gita {emotion} wisdom"
-
-        fallback = search(fallback_query, top_k=3)
-
-        if fallback:
-
-            verse = random.choice(fallback)
-
-            best_score = 0.1
+        try:
+            fallback = search(fallback_query, top_k=3)
+            if fallback:
+                verse = random.choice(fallback)
+                best_score = 0.1
+        except Exception as e:
+            print(f"[Diagnostics] Fallback search failed: {e}")
+            traceback.print_exc()
+            
+    rss_mb = psutil.Process().memory_info().rss / 1024 / 1024
+    print(f"[Diagnostics] RAM Usage (After Retrieval): {rss_mb:.2f} MB")
+    print("[PIPELINE] RETRIEVAL COMPLETE")
 
 
     return {
