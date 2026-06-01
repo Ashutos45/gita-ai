@@ -25,7 +25,7 @@ function logout() {
     localStorage.removeItem("gitaToken");
     localStorage.removeItem("gitaRefreshToken");
     localStorage.removeItem("gitaUser");
-    window.location.replace("signin.html");
+    window.location.replace("signup.html");
 }
 
 // Check if a JWT is expired by parsing its payload
