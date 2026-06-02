@@ -50,6 +50,7 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
     finally:
         t1 = time.time()
         print(f"[Diagnostics] Language Detection END ({round((t1-t0)*1000)} ms)")
+        print("[PIPELINE] LANGUAGE COMPLETE")
 
     # 2. Run local intelligence pipeline
     print("[Diagnostics] START retrieval")
@@ -62,13 +63,22 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
     addiction_flag = result.get("theme") == "self_control"
     t3 = time.time()
     print(f"[Diagnostics] END retrieval ({round((t3-t2)*1000)} ms)")
+    print("[PIPELINE] RETRIEVAL COMPLETE")
+    
+    verse = result.get("verse")
+    
+    if verse:
+        print(f"[PIPELINE] Verse ID: {verse.get('id')}")
 
-    if intent == "greeting":
-        from ai.ai.response_builder import build_response
-        reply = build_response(result=result)
-        explanation = reply.get("explanation", "")
-        await websocket.send_json({"event": "verse", "chapter": None, "verse_number": None, "sanskrit": None, "meaning": None})
+    if result.get("intent") == "greeting":
+        explanation = "Pranam. I am Krishna. How may I guide you on your journey today?"
+        if detected_lang == "hi":
+            explanation = "प्रणाम। मैं कृष्ण हूँ। आज मैं आपकी कैसे सहायता कर सकता हूँ?"
+        
+        print("[PIPELINE] Sending response")
         await websocket.send_json({"event": "text", "text": explanation})
+        print("[PIPELINE] Response sent")
+        print("[PIPELINE] CLOSE CALLED")
         await websocket.send_json({"event": "end"})
         return
 
@@ -174,13 +184,6 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
                 )
                 
                 full_text = ""
-                # Since we are iterating over a synchronous generator in an async function,
-                # we should ideally run the iteration in a thread or fetch chunks, but 
-                # generate_content_stream yields chunks synchronously over the network.
-                # To prevent blocking the event loop on network I/O, we convert the stream
-                # to a list in a thread, or process it chunk by chunk in to_thread.
-                # A simpler approach for timeout resilience is to use the non-streaming call
-                # wrapped in wait_for, or just use wait_for around a wrapper.
                 
                 # To preserve streaming while respecting the timeout:
                 for chunk in response_stream:
@@ -192,14 +195,25 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             try:
                 full_explanation_text = await asyncio.wait_for(generate_gemini_stream(), timeout=20.0)
                 gemini_success = True
+                print(f"[Diagnostics] Gemini response length: {len(full_explanation_text)}")
             except asyncio.TimeoutError:
                 print("[WebSocket Stream] Gemini generation timed out after 20s")
-                await websocket.send_json({"event": "text", "text": "I am unable to reflect deeply at this moment. Please try again in a few moments."})
+                fallback_msg = "Krishna's wisdom is temporarily unavailable. Please try again."
+                print("[PIPELINE] Sending response")
+                await websocket.send_json({"event": "text", "text": fallback_msg})
+                print("[PIPELINE] Response sent")
+                print("[PIPELINE] CLOSE CALLED")
                 await websocket.send_json({"event": "end"})
                 return
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"[WebSocket Stream] Gemini generation failed: {e}")
-                await websocket.send_json({"event": "text", "text": "I am unable to reflect deeply at this moment. Please try again in a few moments."})
+                fallback_msg = "Krishna's wisdom is temporarily unavailable. Please try again."
+                print("[PIPELINE] Sending response")
+                await websocket.send_json({"event": "text", "text": fallback_msg})
+                print("[PIPELINE] Response sent")
+                print("[PIPELINE] CLOSE CALLED")
                 await websocket.send_json({"event": "end"})
                 return
             finally:
@@ -210,7 +224,7 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             # Save AI message in DB
             ai_msg = Message(
                 user_id=user_id,
-                role="ai",
+                sender="ai",
                 text=full_explanation_text,
                 chapter=verse["chapter"] if verse else None,
                 verse_number=verse["verse_number"] if verse else None,
@@ -219,6 +233,8 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             db.add(ai_msg)
             db.commit()
 
+            print("[PIPELINE] SEND COMPLETE")
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.send_json({"event": "end"})
             print("[PIPELINE] RESPONSE SENT")
         except Exception as e:
@@ -307,6 +323,7 @@ async def chat_websocket(websocket: WebSocket):
         
         if not token:
             await websocket.send_json({"error": "Unauthorized: Missing token"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4003)
             return
 
@@ -314,6 +331,7 @@ async def chat_websocket(websocket: WebSocket):
         print(f"[WebSocket] Token decoded successfully: {'Yes' if payload else 'No'}")
         if not payload:
             await websocket.send_json({"error": "Unauthorized: Invalid token"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4003)
             return
 
@@ -325,6 +343,7 @@ async def chat_websocket(websocket: WebSocket):
         print(f"[WebSocket] User resolved: {'Yes' if user_id else 'No'}")
         if not user:
             await websocket.send_json({"error": "Unauthorized: User not found"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4003)
             return
 
@@ -362,12 +381,14 @@ async def voice_live_websocket(websocket: WebSocket):
         token = websocket.query_params.get("token")
         if not token:
             await websocket.send_json({"error": "Unauthorized: Missing token"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4003)
             return
 
         payload = verify_token(token)
         if not payload:
             await websocket.send_json({"error": "Unauthorized: Invalid token"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4003)
             return
 
@@ -375,12 +396,14 @@ async def voice_live_websocket(websocket: WebSocket):
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             await websocket.send_json({"error": "Unauthorized: User not found"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4003)
             return
 
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             await websocket.send_json({"error": "Gemini API key is not configured"})
+            print("[PIPELINE] CLOSE CALLED")
             await websocket.close(code=4001)
             return
 
@@ -482,6 +505,7 @@ async def voice_live_websocket(websocket: WebSocket):
             pass
     finally:
         db.close()
+        print("[PIPELINE] CLOSE CALLED")
         try:
             await websocket.close()
         except Exception:
