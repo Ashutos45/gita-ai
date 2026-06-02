@@ -76,9 +76,11 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             explanation = "प्रणाम। मैं कृष्ण हूँ। आज मैं आपकी कैसे सहायता कर सकता हूँ?"
         
         print("[PIPELINE] Sending response")
+        print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": explanation}}")
         await websocket.send_json({"event": "text", "text": explanation})
         print("[PIPELINE] Response sent")
         print("[PIPELINE] CLOSE CALLED")
+        print(f"[BACKEND] PAYLOAD: {{\"event\": \"end\"}}")
         await websocket.send_json({"event": "end"})
         return
 
@@ -87,7 +89,9 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
         reply = build_response(result=result)
         explanation = reply.get("explanation", "")
         await websocket.send_json({"event": "verse", "chapter": None, "verse_number": None, "sanskrit": None, "meaning": None})
+        print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": explanation}}")
         await websocket.send_json({"event": "text", "text": explanation})
+        print(f"[BACKEND] PAYLOAD: {{\"event\": \"end\"}}")
         await websocket.send_json({"event": "end"})
         return
 
@@ -108,13 +112,15 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
 
     # Send grounding verse metadata to client first
     if verse:
-        await websocket.send_json({
+        payload_verse = {
             "event": "verse",
             "chapter": verse.get("chapter"),
             "verse_number": verse.get("verse_number"),
             "sanskrit": verse.get("sanskrit"),
             "meaning": translated_meaning
-        })
+        }
+        print(f"[BACKEND] PAYLOAD: {payload_verse}")
+        await websocket.send_json(payload_verse)
 
     # 4. Fetch memory trends
     user_memory = get_user_memory(db, user_id)
@@ -189,7 +195,8 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
                 for chunk in response_stream:
                     if chunk.text:
                         full_text += chunk.text
-                        await websocket.send_json({"event": "text", "text": chunk.text})
+                        print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": chunk.text}}")
+        await websocket.send_json({"event": "text", "text": chunk.text})
                 return full_text
             
             try:
@@ -200,10 +207,12 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
                 print("[WebSocket Stream] Gemini generation timed out after 20s")
                 fallback_msg = "Krishna's wisdom is temporarily unavailable. Please try again."
                 print("[PIPELINE] Sending response")
-                await websocket.send_json({"event": "text", "text": fallback_msg})
+                print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": fallback_msg}}")
+        await websocket.send_json({"event": "text", "text": fallback_msg})
                 print("[PIPELINE] Response sent")
                 print("[PIPELINE] CLOSE CALLED")
-                await websocket.send_json({"event": "end"})
+                print(f"[BACKEND] PAYLOAD: {{\"event\": \"end\"}}")
+        await websocket.send_json({"event": "end"})
                 return
             except Exception as e:
                 import traceback
@@ -211,10 +220,12 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
                 print(f"[WebSocket Stream] Gemini generation failed: {e}")
                 fallback_msg = "Krishna's wisdom is temporarily unavailable. Please try again."
                 print("[PIPELINE] Sending response")
-                await websocket.send_json({"event": "text", "text": fallback_msg})
+                print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": fallback_msg}}")
+        await websocket.send_json({"event": "text", "text": fallback_msg})
                 print("[PIPELINE] Response sent")
                 print("[PIPELINE] CLOSE CALLED")
-                await websocket.send_json({"event": "end"})
+                print(f"[BACKEND] PAYLOAD: {{\"event\": \"end\"}}")
+        await websocket.send_json({"event": "end"})
                 return
             finally:
                 t_gemini_end = time.time()
@@ -235,7 +246,8 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
 
             print("[PIPELINE] SEND COMPLETE")
             print("[PIPELINE] CLOSE CALLED")
-            await websocket.send_json({"event": "end"})
+            print(f"[BACKEND] PAYLOAD: {{\"event\": \"end\"}}")
+        await websocket.send_json({"event": "end"})
             print("[PIPELINE] RESPONSE SENT")
         except Exception as e:
                 db.rollback()
@@ -249,6 +261,7 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
         from ai.ai.response_builder import build_response
         reply = build_response(result=result, trend=memory_data, relapse=memory_data)
         explanation = reply.get("explanation", "")
+        print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": explanation}}")
         await websocket.send_json({"event": "text", "text": explanation})
         
         ai_msg = Message(
@@ -322,17 +335,19 @@ async def chat_websocket(websocket: WebSocket):
                 pass
         
         if not token:
-            await websocket.send_json({"error": "Unauthorized: Missing token"})
-            print("[PIPELINE] CLOSE CALLED")
-            await websocket.close(code=4003)
+            print(f"[BACKEND] PAYLOAD: {{\"error\": \"Unauthorized: Missing token\"}}")
+        await websocket.send_json({"error": "Unauthorized: Missing token"})
+            print("[PIPELINE] CLOSE CALLED (Temporarily Disabled)")
+            # await websocket.close(code=4003)
             return
 
         payload = verify_token(token)
         print(f"[WebSocket] Token decoded successfully: {'Yes' if payload else 'No'}")
         if not payload:
-            await websocket.send_json({"error": "Unauthorized: Invalid token"})
-            print("[PIPELINE] CLOSE CALLED")
-            await websocket.close(code=4003)
+            print(f"[BACKEND] PAYLOAD: {{\"error\": \"Unauthorized: Invalid token\"}}")
+        await websocket.send_json({"error": "Unauthorized: Invalid token"})
+            print("[PIPELINE] CLOSE CALLED (Temporarily Disabled)")
+            # await websocket.close(code=4003)
             return
 
         user_id = payload.get("user_id")
@@ -342,11 +357,13 @@ async def chat_websocket(websocket: WebSocket):
         print(f"APP_INSTANCE_ID={APP_INSTANCE_ID} PROCESS_PID={PROCESS_PID} NEW_PID={os.getpid()}")
         print(f"[WebSocket] User resolved: {'Yes' if user_id else 'No'}")
         if not user:
-            await websocket.send_json({"error": "Unauthorized: User not found"})
-            print("[PIPELINE] CLOSE CALLED")
-            await websocket.close(code=4003)
+            print(f"[BACKEND] PAYLOAD: {{\"error\": \"Unauthorized: User not found\"}}")
+        await websocket.send_json({"error": "Unauthorized: User not found"})
+            print("[PIPELINE] CLOSE CALLED (Temporarily Disabled)")
+            # await websocket.close(code=4003)
             return
 
+        print(f"[BACKEND] PAYLOAD: {{\"status\": \"authenticated\", \"user\": user.full_name}}")
         await websocket.send_json({"status": "authenticated", "user": user.full_name})
 
         # Message loop
@@ -357,7 +374,8 @@ async def chat_websocket(websocket: WebSocket):
             if not user_text:
                 continue
 
-            await websocket.send_json({"event": "status", "text": "Krishna is contemplating…"})
+            print(f"[BACKEND] PAYLOAD: {{\"event\": \"status\", \"text\": \"Krishna is contemplating…\"}}")
+        await websocket.send_json({"event": "status", "text": "Krishna is contemplating…"})
             await stream_krishna_reply(websocket, user_text, user.id, db)
 
     except WebSocketDisconnect:
@@ -380,24 +398,27 @@ async def voice_live_websocket(websocket: WebSocket):
         # Authentication
         token = websocket.query_params.get("token")
         if not token:
-            await websocket.send_json({"error": "Unauthorized: Missing token"})
-            print("[PIPELINE] CLOSE CALLED")
-            await websocket.close(code=4003)
+            print(f"[BACKEND] PAYLOAD: {{\"error\": \"Unauthorized: Missing token\"}}")
+        await websocket.send_json({"error": "Unauthorized: Missing token"})
+            print("[PIPELINE] CLOSE CALLED (Temporarily Disabled)")
+            # await websocket.close(code=4003)
             return
 
         payload = verify_token(token)
         if not payload:
-            await websocket.send_json({"error": "Unauthorized: Invalid token"})
-            print("[PIPELINE] CLOSE CALLED")
-            await websocket.close(code=4003)
+            print(f"[BACKEND] PAYLOAD: {{\"error\": \"Unauthorized: Invalid token\"}}")
+        await websocket.send_json({"error": "Unauthorized: Invalid token"})
+            print("[PIPELINE] CLOSE CALLED (Temporarily Disabled)")
+            # await websocket.close(code=4003)
             return
 
         user_id = payload.get("user_id")
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            await websocket.send_json({"error": "Unauthorized: User not found"})
-            print("[PIPELINE] CLOSE CALLED")
-            await websocket.close(code=4003)
+            print(f"[BACKEND] PAYLOAD: {{\"error\": \"Unauthorized: User not found\"}}")
+        await websocket.send_json({"error": "Unauthorized: User not found"})
+            print("[PIPELINE] CLOSE CALLED (Temporarily Disabled)")
+            # await websocket.close(code=4003)
             return
 
         api_key = os.getenv("GEMINI_API_KEY")

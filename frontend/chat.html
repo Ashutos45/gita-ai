@@ -721,7 +721,9 @@ async function ask(){
   };
   
   ws.onmessage = (event) => {
+      console.log("[FRONTEND] RAW MESSAGE:", event.data);
       const data = JSON.parse(event.data);
+      console.log("[FRONTEND] PARSED:", data);
       
       if (data.error) {
           console.error("Server Error:", data.error);
@@ -743,6 +745,7 @@ async function ask(){
           currentAIMsgDiv = document.createElement("div");
           currentAIMsgDiv.className = "msg ai";
           chat.appendChild(currentAIMsgDiv);
+          console.log("[FRONTEND] addAssistantMessage called");
           
           if (liveMode && voiceStatus) {
               voiceStatus.innerText = "Krishna is speaking...";
@@ -750,10 +753,17 @@ async function ask(){
           }
           
       } else if (data.event === "text" || data.type === "chunk") {
-          if (currentAIMsgDiv) {
-              streamedHTML += data.text;
-              currentAIMsgDiv.innerHTML = marked.parse(streamedHTML);
-              chat.scrollTop = chat.scrollHeight;
+          console.log("[FRONTEND] RENDERING:", data.text);
+          if (data.text === undefined) {
+              if (currentAIMsgDiv) {
+                  currentAIMsgDiv.innerHTML = JSON.stringify(data);
+              }
+          } else {
+              if (currentAIMsgDiv) {
+                  streamedHTML += data.text;
+                  currentAIMsgDiv.innerHTML = marked.parse(streamedHTML);
+                  chat.scrollTop = chat.scrollHeight;
+              }
           }
       } else if (data.event === "end" || data.type === "end") {
           setTimeout(() => krishna.classList.remove("active"), 1000);
@@ -794,6 +804,14 @@ async function ask(){
           // Re-trigger the same question using HTTP Fallback which will catch the 401 and handle it
           fallbackToHTTP(userText);
       }
+  };
+  
+  ws.onclose = (event) => {
+      console.log("[FRONTEND] WEBSOCKET CLOSED", event);
+  };
+  
+  ws.onerror = (error) => {
+      console.error("[FRONTEND] WEBSOCKET ERROR", error);
   };
 }
 
