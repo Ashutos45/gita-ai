@@ -76,6 +76,7 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
             explanation = "प्रणाम। मैं कृष्ण हूँ। आज मैं आपकी कैसे सहायता कर सकता हूँ?"
         
         print("[PIPELINE] Sending response")
+        print(f"[DEBUG] explanation={repr(explanation)}")
         print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": explanation}}")
         await websocket.send_json({"event": "text", "text": explanation})
         print("[PIPELINE] Response sent")
@@ -261,6 +262,7 @@ async def stream_krishna_reply(websocket: WebSocket, text: str, user_id: int, db
         from ai.ai.response_builder import build_response
         reply = build_response(result=result, trend=memory_data, relapse=memory_data)
         explanation = reply.get("explanation", "")
+        print(f"[DEBUG] explanation={repr(explanation)}")
         print(f"[BACKEND] PAYLOAD: {{\"event\": \"text\", \"text\": explanation}}")
         await websocket.send_json({"event": "text", "text": explanation})
         

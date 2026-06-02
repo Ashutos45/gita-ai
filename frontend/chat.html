@@ -721,7 +721,7 @@ async function ask(){
   };
   
   ws.onmessage = (event) => {
-      console.log("[FRONTEND] RAW MESSAGE:", event.data);
+      console.log("RAW WS MESSAGE:", event.data);
       const data = JSON.parse(event.data);
       console.log("[FRONTEND] PARSED:", data);
       
